@@ -19,12 +19,12 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
 
 
 """
-    Espectra(spec_data, time_var, pitch_angles, loss_cone, energy_bins; para_tol=22.25, anti_tol=22.25)
+    directional_energy_spectra(spec_data, time_var, pitch_angles, loss_cone; para_tol=22.25, anti_tol=22.25)
 
-Process 3D spectral data (time × pitch_angle × energy) to extract directional flux spectra.
+Process 3D spectral data (pitch_angle × energy × time) to extract directional flux spectra.
 This implements the same logic as pyspedas epd_l2_Espectra function.
 """
-function Espectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
+function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
     n_pa, n_energy, n_time = size(S)
     T = promote_type(eltype(S), eltype(pitch_angles), eltype(loss_cone))
     return @no_escape begin

@@ -3,9 +3,15 @@ module VelocityDistributionFunctions
 using Tullio: @tullio
 using Bumper
 using LoopVectorization
+using LinearAlgebra
+using StaticArrays
 
 include("utils.jl")
 include("spectra.jl")
+include("pad.jl")
+
+export pitch_angle_distribution, tpitch_angle_distribution
+export directional_energy_spectra
 
 """
     sort_flux_by_pitch_angle(flux, pitch_angle)
