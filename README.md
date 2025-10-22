@@ -1,12 +1,13 @@
 # VelocityDistributionFunctions
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/dev/)
 [![Build Status](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/JuliaSpacePhysics/VelocityDistributionFunctions.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/VelocityDistributionFunctions.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 Analysis tools for particle velocity distribution functions (VDFs).
+
+Functions provided here are intended to be used as building blocks for mission-specific particle distribution tools. Mission-specific wrappers will generally be needed to load the particle data to be operated on, perform calibration, sanitization, and other preliminary steps.
 
 ## Features and Roadmap
 
