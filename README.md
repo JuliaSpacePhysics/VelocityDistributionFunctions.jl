@@ -11,6 +11,10 @@ Functions provided here are intended to be used as building blocks for mission-s
 
 ## Features and Roadmap
 
+- [ ] Common analytical VDFs
+    - [x] Maxwellian / BiMaxwellian
+    - [x] Kappa
+    - [ ] Powerlaw
 - [x] Generate pitch-angle distributions (PADs) from VDFs
     - [x] New PADs by averaging over multiple energy channels
 - [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs
@@ -21,6 +25,7 @@ Functions provided here are intended to be used as building blocks for mission-s
 
 ## Elsewhere
 
+- [plasmapy.distributions](https://docs.plasmapy.org/en/stable/formulary/distribution.html)
 - [ISEE_3D](https://earth-planets-space.springeropen.com/articles/10.1186/s40623-017-0761-9): Visualization tool for three-dimensional plasma velocity distributions
 - [Bulk Flow Velocity Changing Software - Lynn B. Wilson](https://wind.nasa.gov/docs/vbulk_change_documentation.pdf)
 - [SPEDAS Particle Tools Development Guide](https://spedas.org/presentations/pgs_development_v1.1.pdf)

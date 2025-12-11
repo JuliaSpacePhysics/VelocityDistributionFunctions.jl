@@ -7,3 +7,4 @@ using Aqua
 end
 
 include("test_pad.jl")
+include("test_distributions.jl")

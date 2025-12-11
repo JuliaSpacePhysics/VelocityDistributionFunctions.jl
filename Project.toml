@@ -3,17 +3,30 @@ uuid = "63a0b508-f74a-48f7-b6e7-0e65849b0078"
 version = "0.1.0"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
+[workspace]
+projects = ["test", "docs"]
+
 [deps]
+BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
+BaseType = "0.2.0"
 Bumper = "0.7"
+Distributions = "0.25"
 LinearAlgebra = "1"
 LoopVectorization = "0.12"
+Random = "1"
+SpecialFunctions = "2"
 StaticArrays = "1.9"
 Tullio = "0.3"
+Unitful = "1"
 julia = "1.10"
