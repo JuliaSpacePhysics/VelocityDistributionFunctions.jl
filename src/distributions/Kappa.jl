@@ -39,7 +39,7 @@ function kappa_thermal_speed(T, κ, m)
 end
 
 
-_Aκ(κ, vth) = 1 / √((π * κ)^3) / vth^3 * gamma(κ + 1) / gamma(κ - 1 / 2)
+_Aκ(κ, vth) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / vth^3
 
 function _pdf(d::Kappa, 𝐯)
     w² = sqdist(𝐯, d.u0) / (d.κ * d.vth^2)
