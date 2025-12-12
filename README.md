@@ -1,5 +1,6 @@
 # VelocityDistributionFunctions
 
+[![DOI](https://zenodo.org/badge/1072447322.svg)](https://doi.org/10.5281/zenodo.17905508)
 [![version](https://juliahub.com/docs/General/VelocityDistributionFunctions/stable/version.svg)](https://juliahub.com/ui/Packages/General/VelocityDistributionFunctions)
 
 [![Build Status](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/actions/workflows/CI.yml?query=branch%3Amain)
@@ -18,8 +19,9 @@ Some functions provided here are intended to be used as building blocks for miss
 
 - [ ] Common analytical VDFs
     - [x] Maxwellian / BiMaxwellian
-    - [x] Kappa
+    - [x] Kappa / BiKappa
     - [ ] Powerlaw
+    - [ ] Different forms (e.g. phase space density / flux / energy flux)
 - [x] Generate pitch-angle distributions (PADs) from VDFs
     - [x] New PADs by averaging over multiple energy channels
 - [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs
