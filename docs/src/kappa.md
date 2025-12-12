@@ -12,10 +12,11 @@ $$A_3 = \frac{\Gamma(\kappa + 1)}{(\pi \kappa v_{th}^2)^{3/2} \Gamma(\kappa - 1/
 ```@example kappa
 using VelocityDistributionFunctions
 import VelocityDistributionFunctions as VDFs
+using VelocityDistributionFunctions: V
 using Random, Unitful, LinearAlgebra
 using CairoMakie
 
-# Create Kappa distribution: κ=3.0, vth=1.0
+# Create Kappa distribution: vth=1.0, κ=3.0
 vdf = Kappa(1.0, 3.0)
 
 # Create Kappa distribution with temperature
@@ -89,7 +90,8 @@ fig
 
 ```@example kappa
 d_max = Maxwellian(1.0)
-d_kappa = Kappa(1.0, 20)
+κ = 3.0
+d_kappa = Kappa(1.0, κ)
 
 n_samples = 50000
 samples_max = rand(d_max, n_samples)
@@ -100,12 +102,12 @@ speeds_kappa = norm.(samples_kappa)
 
 # Theoretical distributions
 v_range = range(0, 5, length=200)
-speed_pdf_max = [4π * v^2 * d_max([v, 0, 0]) for v in v_range]
-speed_pdf_kappa = [4π * v^2 * d_kappa([v, 0, 0]) for v in v_range]
+speed_pdf_max = d_max.(V.(v_range))
+speed_pdf_kappa = d_kappa.(V.(v_range))
 
 # Plot
 let fig = Figure(size=(800, 600))
-    ax = Axis(fig[1, 1], xlabel="Speed", ylabel="Probability Density", title="Maxwellian vs Kappa Distribution (κ=3)", yscale=log10)
+    ax = Axis(fig[1, 1], xlabel="Speed", ylabel="Probability Density", title="Maxwellian vs Kappa Distribution (κ=$κ)", yscale=log10)
     hist!(ax, speeds_max, bins=100, normalization=:pdf, label="Maxwellian (samples)", alpha=0.5)
     hist!(ax, speeds_kappa, bins=100, normalization=:pdf, label="Kappa (samples)", alpha=0.5)
     lines!(ax, v_range, speed_pdf_max, color=:blue, linewidth=2, label="Maxwellian (theory)", linestyle=:dash)
