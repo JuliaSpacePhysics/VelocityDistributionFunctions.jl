@@ -1,5 +1,5 @@
 using VelocityDistributionFunctions
-import VelocityDistributionFunctions: _pdf_1d
+import VelocityDistributionFunctions: _pdf_1d, V
 using Test
 using Random
 using LinearAlgebra: norm, dot
@@ -28,6 +28,7 @@ using Unitful
 
         vdf2 = ustrip(vdf)
         @test vdf2(ustrip(𝐯)) ≈ 2.0708893e-19
+        @test vdf2(V(1)) ≈ 2.0708893e-19 * 4π * 1^2
     end
 end
 

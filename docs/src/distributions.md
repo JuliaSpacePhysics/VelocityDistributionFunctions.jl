@@ -55,6 +55,7 @@ The following examples demonstrate sampling from distributions and comparing wit
 ```@example vdf
 using CairoMakie
 using LinearAlgebra: norm
+using VelocityDistributionFunctions: V
 
 # Create Maxwellian distribution
 vdf = Maxwellian(1.0)
@@ -67,7 +68,7 @@ speeds = norm.(vs)
 # Theoretical speed distribution: f(v) = 4π v² f₃D(v)
 # where f₃D is the 3D Maxwellian
 v_range = range(0, 4, length=200)
-speed_pdf = [4π * v^2 * vdf([v, 0, 0]) for v in v_range]
+speed_pdf = vdf.(V.(v_range)) # using V constructor to denote speed
 
 # Plot
 let fig = Figure()

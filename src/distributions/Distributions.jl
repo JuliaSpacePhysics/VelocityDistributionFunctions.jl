@@ -44,3 +44,7 @@ include("Maxwellian.jl")
 include("BiMaxwellian.jl")
 include("Kappa.jl")
 include("VDFsUnitfulExt.jl")
+
+function Distributions.pdf(vdf::Union{Maxwellian, Kappa}, v::V)
+    return 4π * v.val^2 * _pdf(vdf, SA[v.val, 0, 0])
+end

@@ -25,5 +25,5 @@ makedocs(;
 
 deploydocs(;
     repo = "github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl",
-    devbranch = "main",
+    push_preview = true,
 )
