@@ -41,6 +41,13 @@ vdf = Maxwellian(T)
 vdf(𝐯)
 ```
 
+Strip units from a distribution using `ustrip`.
+
+```@example vdf
+vdf_unitless = ustrip(vdf)
+vdf_unitless(ustrip(𝐯))
+```
+
 ### Visualization
 
 The following examples demonstrate sampling from distributions and comparing with theoretical PDFs using Makie.

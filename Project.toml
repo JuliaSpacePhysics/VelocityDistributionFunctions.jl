@@ -9,6 +9,7 @@ projects = ["test", "docs"]
 [deps]
 BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
+ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
@@ -21,6 +22,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 [compat]
 BaseType = "0.2.0"
 Bumper = "0.7"
+ConstructionBase = "1.6.0"
 Distributions = "0.25"
 LinearAlgebra = "1"
 LoopVectorization = "0.12"
