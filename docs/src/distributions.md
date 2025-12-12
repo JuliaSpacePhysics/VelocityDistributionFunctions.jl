@@ -18,7 +18,7 @@ using VelocityDistributionFunctions
 
 v_th = 1.0 # Thermal velocity
 u0 = [0.5, 0.0, 0.0] # Drift velocity
-vdf = Maxwellian(v_th, u0)
+vdf = Maxwellian(v_th; u0)
 
 # Sample from the distribution
 samples = rand(vdf, 10000)
@@ -117,4 +117,14 @@ let fig = Figure()
     axislegend(ax2, position=:rt)
     fig
 end
+```
+
+## ShiftedPDF
+
+Any velocity PDF can be drifted by wrapping it in [`ShiftedPDF`](@ref).
+
+```@example vdf
+base = MaxwellianPDF(v_th)
+u0 = [0.5, 0.0, 0.0] 
+vdf = ShiftedPDF(base, u0)
 ```

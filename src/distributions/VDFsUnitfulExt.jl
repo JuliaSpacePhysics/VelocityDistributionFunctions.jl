@@ -5,8 +5,7 @@ import Unitful: ustrip
 using ConstructionBase: constructorof, getfields
 using Unitful: 𝐋
 @derived_dimension NumberDensity 𝐋^-3
-
-
+const NType = Union{NumberDensity, Real}
 v_th(T, m) = upreferred(sqrt(2 * k * T / m))
 
 const vth_kappa_ = kappa_thermal_speed
@@ -17,32 +16,27 @@ const vth_kappa_ = kappa_thermal_speed
 Strip units from all fields of a velocity distribution, returning a new distribution
 with unitless values.
 """
-function ustrip(d::T) where {T <: AbstractVelocityPDF}
+function ustrip(d::T) where {T <: Union{AbstractVelocityPDF, VelocityDistribution}}
     fields = map(x -> ustrip.(x), getfields(d))
     return constructorof(T)(fields...; check_args = false)
 end
 
-function ustrip(d::VelocityDistribution)
-    return VelocityDistribution(ustrip(d.shape), ustrip(d.n))
-end
+MaxwellianPDF(T::Temperature; mass = me, kw...) =
+    MaxwellianPDF(v_th(T, mass); kw...)
 
+BiMaxwellianPDF(T_perp::Temperature, T_para::Temperature, args...; mass = me, kw...) =
+    BiMaxwellianPDF(v_th(T_perp, mass), v_th(T_para, mass), args...; kw...)
 
-Maxwellian(T::Temperature, args...; mass = me, kw...) =
-    Maxwellian(v_th(T, mass), args...; kw...)
+KappaPDF(T_perp::Temperature, κ; mass = me, kw...) =
+    KappaPDF(vth_kappa_(T_perp, κ, mass), κ; kw...)
 
-BiMaxwellian(T_perp::Temperature, T_para::Temperature, args...; mass = me, kw...) =
-    BiMaxwellian(v_th(T_perp, mass), v_th(T_para, mass), args...; kw...)
-
-Kappa(T_perp::Temperature, κ, args...; mass = me, kw...) =
-    Kappa(vth_kappa_(T_perp, κ, mass), κ, args...; kw...)
-
-BiKappa(T_perp::Temperature, T_para::Temperature, κ, args...; mass = me, kw...) =
-    BiKappa(vth_kappa_(T_perp, κ, mass), vth_kappa_(T_para, κ, mass), κ, args...; kw...)
+BiKappaPDF(T_perp::Temperature, T_para::Temperature, κ, args...; mass = me, kw...) =
+    BiKappaPDF(vth_kappa_(T_perp, κ, mass), vth_kappa_(T_para, κ, mass), κ, args...; kw...)
 
 Distributions.pdf(d::AbstractVelocityPDF, v::AbstractVector{<:Velocity}) = _pdf(d, v)
 
 for f in (:Maxwellian, :BiMaxwellian, :Kappa, :BiKappa)
-    @eval $f(n::NumberDensity, T::Temperature, args...; kw...) = VelocityDistribution(n, $f(T, args...; kw...))
+    @eval $f(n::NType, T::Temperature, args...; kw...) = VelocityDistribution(n, $f(T, args...; kw...))
 end
 
 for f in (:Maxwellian, :Kappa)

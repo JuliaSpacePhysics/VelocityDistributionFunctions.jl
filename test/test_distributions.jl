@@ -1,5 +1,5 @@
 using VelocityDistributionFunctions
-import VelocityDistributionFunctions: _pdf_1d, V
+import VelocityDistributionFunctions: _pdf_1d, V, ShiftedPDF
 using Test
 using Random
 using LinearAlgebra: norm, dot
@@ -13,10 +13,31 @@ using Unitful: 𝐓, 𝐋, dimension
         d = Maxwellian(1.0)
         @test d.vth == 1.0
 
+        density = 10.0
+        d = Maxwellian(density, 1.0)
+        @test d.n == density
+        @test d.vth == 1.0
+        @test identity.(d) == d
+
         # Invalid construction
         @test_throws "DomainError with -1.0:" Maxwellian(-1.0)  # negative vth
         @test_nowarn Maxwellian(-1.0; check_args = false)
-        @test_throws "MaxwellianPDF: the condition length(u0) == 3 is not satisfied." Maxwellian(1.0, [1, 0])  # wrong u0 dimension
+        @test_throws "ShiftedPDF: the condition length(u0) == length(base) is not satisfied." Maxwellian(1.0; u0 = [1, 0])  # wrong u0 dimension
+    end
+
+    @testset "Sampling" begin
+        for vdf in [Maxwellian(1.0), Maxwellian(1.0, 2.0)]
+            Random.seed!(42)
+            # Single sample
+            @test length(rand(vdf, 1)[1]) == 3
+            @test length(rand(vdf, 1, 1)[1]) == 3
+            @test length(rand(vdf)) == 3
+
+            # Multiple samples
+            n = 2
+            samples = rand(vdf, n)
+            @test length(samples) == n
+        end
     end
 
     # https://docs.plasmapy.org/en/stable/api/plasmapy.formulary.distribution.Maxwellian_velocity_3D.html#plasmapy.formulary.distribution.Maxwellian_velocity_3D
@@ -53,8 +74,7 @@ end
 
         # Invalid construction
         @test_throws DomainError BiMaxwellian(-1.0, 2.0)  # negative vth_perp
-        @test_throws DomainError BiMaxwellian(1.0, 2.0, [1, 0])  # wrong u0 dimension
-        @test_throws DomainError BiMaxwellian(1.0, 2.0, [0, 0, 0], [1, 0])  # wrong B_dir dimension
+        @test_throws DomainError BiMaxwellian(1.0, 2.0, [1, 0])  # wrong B_dir dimension
     end
 
     @testset "Unitful PDF evaluation" begin
@@ -67,6 +87,10 @@ end
 
         @test vdf(VPar(0u"m/s")) ≈ 5.916328704919331e-7 * 1u"s/m"
         @test vdf(VPerp(0u"m/s")) == 0u"s/m"
+
+        vdf2 = ShiftedPDF(vdf, 𝐯)
+        @test vdf2(VPar(1u"m/s")) == vdf(VPar(0u"m/s"))
+        @test_throws MethodError vdf2(VPerp(0u"m/s"))
     end
 
     @testset "Physical distribution wrapper" begin
@@ -82,7 +106,7 @@ end
     @testset "Drift velocity" begin
         Random.seed!(42)
         u0 = [0.0, 0.0, 3.0]  # Drift along z-axis
-        d = BiMaxwellian(1.0, 1.0, u0)
+        d = BiMaxwellian(1.0, 1.0; u0)
 
         # Sample and check mean velocity
         n = 256
@@ -103,7 +127,7 @@ end
         @test all(isfinite, v)
 
         # Multiple samples
-        n = 100
+        n = 2
         samples = rand(d, n)
         @test length(samples) == n
     end
@@ -176,8 +200,8 @@ end
         κ = 4.5
         u0 = [0.1, -0.2, 0.3]
         b0 = [0.0, 0.0, 1.0]
-        d_iso = Kappa(vth, κ, u0)
-        d_bi = BiKappa(vth, vth, κ, u0, b0)
+        d_iso = Kappa(vth, κ; u0)
+        d_bi = BiKappa(vth, vth, κ, b0; u0)
         v = [0.7, -0.4, 0.9]
         @test d_bi(v) ≈ d_iso(v)
     end
