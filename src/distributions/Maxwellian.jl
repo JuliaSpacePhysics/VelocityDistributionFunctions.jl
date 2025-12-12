@@ -1,6 +1,6 @@
 """
     Maxwellian(vth, 𝐮₀)
-    Maxwellian(T::Temperature, 𝐮₀)
+    Maxwellian(T::Temperature, 𝐮₀; mass = me)
 
 Isotropic Maxwellian velocity distribution with thermal velocity `vth` / temperature `T` and drift velocity `𝐮₀`.
 """
@@ -20,6 +20,5 @@ end
 
 # Generalal pdf that supports unitful inputs
 function _pdf(d::Maxwellian, 𝐯)
-    r² = sum(abs2, 𝐯 - d.u0)
-    return (π^-1.5) * d.vth^-3 * exp(-r² / d.vth^2)
+    return sqrt(π^-3) * d.vth^-3 * exp(-sqdist(d.u0, 𝐯) / d.vth^2)
 end

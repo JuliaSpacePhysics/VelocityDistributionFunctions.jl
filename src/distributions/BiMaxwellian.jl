@@ -1,5 +1,6 @@
 """
     BiMaxwellian(vth_perp, vth_para, 𝐮₀=[0, 0, 0], b0=[0, 0, 1])
+    BiMaxwellian(T_perp::Temperature, T_para::Temperature, 𝐮₀=[0, 0, 0], b0=[0, 0, 1]; mass = me)
 
 BiMaxwellian velocity distribution with different thermal velocities in perpendicular `vth_perp` and parallel `vth_para` directions and drift velocity `𝐮₀` and magnetic field direction `b0`.
 

@@ -1,11 +1,12 @@
-raw"""
+"""
     BiKappa(vth_perp, vth_para, κ, 𝐮₀=[0, 0, 0], b0=[0, 0, 1])
+    BiKappa(T_perp::Temperature, T_para::Temperature, κ, 𝐮₀=[0, 0, 0], b0=[0, 0, 1]; mass = me)
 
 BiKappa velocity distribution with kappa index `κ`, different thermal velocities in perpendicular
 `vth_perp` and parallel `vth_para` directions, drift velocity `𝐮₀` and magnetic field direction `b0`.
 
 ```math
-f(𝐯) ∝ \left[1 + \frac{(𝐯_⟂ - 𝐮_{0, ⟂})^{2}/v_{\mathrm{th}, ⟂}^{2} + (𝐯_∥ - 𝐮_{0, ∥})^{2}/v_{\mathrm{th}, ∥}^{2}}{κ}\right]^{-(κ+1)}
+f(𝐯) ∝ \\left[1 + \\frac{(𝐯_⟂ - 𝐮_{0, ⟂})^{2}/v_{\\mathrm{th}, ⟂}^{2} + (𝐯_∥ - 𝐮_{0, ∥})^{2}/v_{\\mathrm{th}, ∥}^{2}}{κ}\\right]^{-(κ+1)}
 ```
 
 where the normalization constant is

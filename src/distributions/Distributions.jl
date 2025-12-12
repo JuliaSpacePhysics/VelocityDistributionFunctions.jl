@@ -1,8 +1,8 @@
 using Random
 using Distributions
-using Distributions: MultivariateDistribution, _logpdf, @check_args
+using Distributions: MultivariateDistribution, @check_args
 import Distributions: pdf
-using LinearAlgebra: norm, normalize, dot
+using LinearAlgebra: normalize, dot
 using SpecialFunctions: gamma
 using BaseType: base_numeric_type
 
