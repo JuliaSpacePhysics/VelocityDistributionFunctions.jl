@@ -2,17 +2,29 @@
     BiKappa(vth_perp, vth_para, κ, 𝐮₀=[0, 0, 0], b0=[0, 0, 1])
     BiKappa(T_perp::Temperature, T_para::Temperature, κ, 𝐮₀=[0, 0, 0], b0=[0, 0, 1]; mass = me)
 
-BiKappa velocity distribution with kappa index `κ`, different thermal velocities in perpendicular
-`vth_perp` and parallel `vth_para` directions, drift velocity `𝐮₀` and magnetic field direction `b0`.
+Modified BiKappa velocity distribution with kappa index `κ`, assuming κ-independent temperatures ``T_{∥,⟂}``, with drift velocity `𝐮₀` and magnetic field direction `b0`. 
+
+The distribution can also be parameterized by kappa thermal speeds ``v_{th,∥}`` and ``v_{th,⟂}``.
 
 ```math
-f(𝐯) ∝ \\left[1 + \\frac{(𝐯_⟂ - 𝐮_{0, ⟂})^{2}/v_{\\mathrm{th}, ⟂}^{2} + (𝐯_∥ - 𝐮_{0, ∥})^{2}/v_{\\mathrm{th}, ∥}^{2}}{κ}\\right]^{-(κ+1)}
+\\begin{aligned}
+f_κ(𝐯) & ∝ \\left[1 + \\frac{v_∥^2}{κ v_{\\mathrm{th}, ∥}^2} + \\frac{v_⟂^2}{κ v_{\\mathrm{th}, ⟂}^2}\\right]^{- κ - 1} \\\\
+    & = \\left[1+\\frac{m}{k_B (2 κ-3)} \\left(\\frac{v_∥^2}{T_∥}+\\frac{v_⟂^2}{T_⟂}\\right) \\right]^{-κ-1}
+\\end{aligned}
 ```
 
 where the normalization constant is
-``A = Γ(κ + 1) / Γ(κ - 1/2) / ((π κ)^{3/2} v_{th,∥} v_{th,⟂}^2)``.
+
+```math
+\\begin{aligned}
+A_κ &= \\left(\\frac{1}{π κ}\\right)^{3/2} \\frac{1}{v_{th,∥} v_{th,⟂}^2} \\frac{Γ[κ+1]}{Γ[κ-1/2]} \\\\
+  &= \\left[\\frac{m}{π k_B(2 κ-3)}\\right]^{3 / 2} \\frac{1}{T_⟂ \\sqrt{T_∥}} \\frac{Γ[κ+1]}{Γ[κ-1/2]}
+\\end{aligned}
+```
+
+See also [`Kappa`](@ref), [`kappa_thermal_speed`](@ref)
 """
-struct BiKappa{T, K <: Real, TB, TVD} <: VelocityDistribution{T}
+struct BiKappa{T, K <: Real, TB, TVD} <: KappaDistribution{T, K}
     vth_perp::T
     vth_para::T
     κ::K
