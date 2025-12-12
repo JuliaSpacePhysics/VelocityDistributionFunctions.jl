@@ -1,13 +1,14 @@
 """
-    Kappa(κ, vth, 𝐮₀=[0, 0, 0])
-
+    Kappa(vth, κ, 𝐮₀=[0, 0, 0])
+    Kappa(T::Temperature, κ, 𝐮₀=[0, 0, 0]; mass = me)
+    
 Kappa velocity distribution with index `κ` and thermal velocity `vth`, with optional drift velocity `𝐮₀`.
 
 ```math
 f(𝐯) ∝ [1 + |𝐯 - 𝐮₀|²/(κ·vₜₕ²)]^{-(κ+1)}
 ```
 
-where the normalization constant is ``A_3 = Γ(κ + 1) / (π κ v_{th}^2)^{3/2} / Γ(κ - 1/2)``.
+where the normalization constant is ``A_3 = Γ(κ + 1) / Γ(κ - 1/2) / (π κ v_{th}^2)^{3/2}``.
 
 # Notes
 Kappa index must be > 1.5 for finite variance. For large κ, the distribution approaches a Maxwellian. Smaller κ values produce stronger high-energy tails.
