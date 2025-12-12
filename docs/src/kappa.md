@@ -60,33 +60,35 @@ end
 
 ## Example: Sampling Kappa Heavy Tails
 
+Here we compare the sampling of different kappa distributions with the same temperature (the second moment of the distribution).
+
 ```@example kappa
-kappas = [2.5, 5.0, 10.0, 100.0]
-colors = [:red, :orange, :green, :blue]
+kappas = [2.5, 5.0, 10.0, 20]
+colors = [:orange, :green, :blue, :red, ]
 
 fig = Figure(size=(800, 600))
 ax = Axis(fig[1, 1],
-    xlabel="Speed",
+    xlabel="Speed [m/s]",
     ylabel="Probability Density",
     title="Kappa Distribution: Effect of κ parameter",
     yscale=log10)
 
-vmax = 10
+vmax = 6e6
 v_range = range(0, vmax, length=200)
 
+Random.seed!(123)
+T = 30000u"K"
 for (κ, color) in zip(kappas, colors)
-    d = Kappa(1.0, κ)
-
-    # Generate samples
+    vdf = ustrip(Kappa(T, κ))
     n_samples = 100000
-    samples = rand(d, n_samples)
+    samples = rand(vdf, n_samples)
     speeds = norm.(samples)
 
     # Theoretical PDF
-    speed_pdf = [4π * v^2 * d([v, 0, 0]) for v in v_range]
+    speed_pdf = vdf.(V.(v_range))
 
     # Plot
-    hist!(ax, speeds, bins=100, normalization=:pdf,
+    hist!(ax, speeds, bins=200, normalization=:pdf,
           color=(color, 0.3), label="κ=$κ (samples)")
     lines!(ax, v_range, speed_pdf, color=color, linewidth=2,
            label="κ=$κ (theory)", linestyle=:dash)
@@ -94,7 +96,7 @@ end
 
 axislegend(ax, position=:rt)
 xlims!(ax, 0, vmax)
-ylims!(ax, 1e-4, nothing)
+ylims!(ax, 1e-9, nothing)
 fig
 ```
 
