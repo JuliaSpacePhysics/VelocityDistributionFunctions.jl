@@ -1,10 +1,25 @@
 using Unitful: upreferred
 using Unitful: Quantity, Temperature, Velocity
 using Unitful: me, k
+import Unitful: ustrip
+using ConstructionBase: constructorof, getfields
 
 v_th(T, m) = upreferred(sqrt(2 * k * T / m))
 
 const vth_kappa_ = kappa_thermal_speed
+
+"""
+    ustrip(d::VelocityDistribution)
+
+Strip units from all fields of a velocity distribution, returning a new distribution
+with unitless values.
+"""
+function ustrip(d::T) where {T <: VelocityDistribution}
+    props = getfields(d)
+    stripped_props = map(ustrip, props)
+    return constructorof(T)(stripped_props...; check_args = false)
+end
+
 
 Maxwellian(T::Temperature, args...; mass = me, kw...) =
     Maxwellian(v_th(T, mass), args...; kw...)

@@ -25,6 +25,9 @@ using Unitful
         𝐯 = ones(3) .* 1u"m/s"
         @test vdf(𝐯) ≈ 2.0708893e-19 * 1u"s^3/m^3"
         @test eltype(rand(vdf)) <: Quantity
+
+        vdf2 = ustrip(vdf)
+        @test vdf2(ustrip(𝐯)) ≈ 2.0708893e-19
     end
 end
 
