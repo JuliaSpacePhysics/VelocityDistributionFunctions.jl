@@ -27,6 +27,18 @@ vdf2 = Kappa(T, 4.0)
 vdf2(𝐯)
 ```
 
+## Example: BiKappa (anisotropic kappa)
+
+```@example kappa
+# Create an anisotropic kappa distribution (different perpendicular/parallel thermal speeds)
+κ = 3.0
+# Unitful constructor using temperatures (perp/para)
+Tperp = 30000u"K"
+Tpara = 60000u"K"
+vdf_bi = BiKappa(Tperp, Tpara, κ)
+vdf_bi(ones(3) .* 1u"m/s")
+```
+
 ## Example: Compare 1D projection PDF with theory
 
 ```@example kappa

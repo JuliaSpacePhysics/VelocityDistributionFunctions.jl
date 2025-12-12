@@ -1,6 +1,7 @@
 using Random
 using Distributions
 using Distributions: MultivariateDistribution, _logpdf, @check_args
+import Distributions: pdf
 using LinearAlgebra: norm, normalize, dot
 using SpecialFunctions: gamma
 using BaseType: base_numeric_type
@@ -19,7 +20,7 @@ Random.rand(d::VelocityDistribution, dim::Int) = rand(d, (dim,))
 
 # ---
 # Distributions interface
-Base.length(d::VelocityDistribution) = 3
+Base.length(::VelocityDistribution) = 3
 # Handle method ambiguity (`Distributions` assume Real type output)
 Distributions._rand!(rng::AbstractRNG, d::VelocityDistribution, x::AbstractVector{<:Real}) = _rand!(rng, d, x)
 Distributions.pdf(d::VelocityDistribution, 𝐯::AbstractVector{<:Real}) = _pdf(d, 𝐯)
@@ -43,6 +44,7 @@ end
 include("Maxwellian.jl")
 include("BiMaxwellian.jl")
 include("Kappa.jl")
+include("BiKappa.jl")
 include("VDFsUnitfulExt.jl")
 
 function Distributions.pdf(vdf::Union{Maxwellian, Kappa}, v::V)

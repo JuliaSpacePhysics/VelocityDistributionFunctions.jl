@@ -125,3 +125,56 @@ end
         @test empirical_var_dim ≈ theoretical_var rtol = 5.0e-2
     end
 end
+
+
+@testset "BiKappa Distribution" begin
+    @testset "Construction" begin
+        d = BiKappa(1.0, 2.0, 3.0)
+        @test d.vth_perp == 1.0
+        @test d.vth_para == 2.0
+        @test d.κ == 3.0
+
+        @test_throws DomainError BiKappa(1.0, 2.0, 1.0) # κ too small
+        @test_throws DomainError BiKappa(-1.0, 2.0, 3.0) # negative vth_perp
+    end
+
+    @testset "Matches isotropic Kappa when vth_perp == vth_para" begin
+        vth = 1.2
+        κ = 4.5
+        u0 = [0.1, -0.2, 0.3]
+        b0 = [0.0, 0.0, 1.0]
+        d_iso = Kappa(vth, κ, u0)
+        d_bi = BiKappa(vth, vth, κ, u0, b0)
+        v = [0.7, -0.4, 0.9]
+        @test d_bi(v) ≈ d_iso(v)
+    end
+
+    @testset "Unitful" begin
+        T = 30000u"K" # Temperature
+        vdf = BiKappa(T, T, 4.0)
+        𝐯 = ones(3) .* 1u"m/s"
+        @test vdf(𝐯) ≈ 3.7833969124639276e-19 * 1u"s^3/m^3"
+    end
+
+    @testset "Sampling variance" begin
+        Random.seed!(1234)
+        κ = 2.5
+        vth_perp = 800.0
+        vth_para = 1200.0
+        d = BiKappa(vth_perp, vth_para, κ)
+        samples = rand(d, 20000)
+
+        # Per-component theoretical variance for the underlying 1D kappa = vth^2 * κ / (2κ - 3)
+        theoretical_var_perp = (vth_perp^2 * κ) / (2 * κ - 3)
+        theoretical_var_para = (vth_para^2 * κ) / (2 * κ - 3)
+
+        # b0 defaults to z, so x/y are ⟂ and z is ∥
+        empirical_var_x = var(getindex.(samples, 1))
+        empirical_var_y = var(getindex.(samples, 2))
+        empirical_var_z = var(getindex.(samples, 3))
+
+        @test empirical_var_x ≈ theoretical_var_perp rtol = 5.0e-2
+        @test empirical_var_y ≈ theoretical_var_perp rtol = 5.0e-2
+        @test empirical_var_z ≈ theoretical_var_para rtol = 5.0e-2
+    end
+end

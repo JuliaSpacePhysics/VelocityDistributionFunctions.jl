@@ -30,6 +30,9 @@ BiMaxwellian(T_perp::Temperature, T_para::Temperature, args...; mass = me, kw...
 Kappa(T_perp::Temperature, κ, args...; mass = me, kw...) =
     Kappa(vth_kappa_(T_perp, κ, mass), κ, args...; kw...)
 
+BiKappa(T_perp::Temperature, T_para::Temperature, κ, args...; mass = me, kw...) =
+    BiKappa(vth_kappa_(T_perp, κ, mass), vth_kappa_(T_para, κ, mass), κ, args...; kw...)
+
 Distributions.pdf(d::VelocityDistribution, v::AbstractVector{<:Velocity}) = _pdf(d, v)
 
 function Random.rand(d::VelocityDistribution{<:Quantity})
