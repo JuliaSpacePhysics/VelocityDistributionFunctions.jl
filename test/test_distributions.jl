@@ -5,6 +5,7 @@ using Random
 using LinearAlgebra: norm, dot
 using Statistics: mean, var
 using Unitful
+using Unitful: 𝐓, 𝐋, dimension
 
 @testset "Maxwellian Distribution" begin
     @testset "Construction" begin
@@ -15,7 +16,7 @@ using Unitful
         # Invalid construction
         @test_throws "DomainError with -1.0:" Maxwellian(-1.0)  # negative vth
         @test_nowarn Maxwellian(-1.0; check_args = false)
-        @test_throws "Maxwellian: the condition length(u0) == 3 is not satisfied." Maxwellian(1.0, [1, 0])  # wrong u0 dimension
+        @test_throws "MaxwellianPDF: the condition length(u0) == 3 is not satisfied." Maxwellian(1.0, [1, 0])  # wrong u0 dimension
     end
 
     # https://docs.plasmapy.org/en/stable/api/plasmapy.formulary.distribution.Maxwellian_velocity_3D.html#plasmapy.formulary.distribution.Maxwellian_velocity_3D
@@ -29,6 +30,17 @@ using Unitful
         vdf2 = ustrip(vdf)
         @test vdf2(ustrip(𝐯)) ≈ 2.0708893e-19
         @test vdf2(V(1)) ≈ 2.0708893e-19 * 4π * 1^2
+    end
+
+    @testset "Physical distribution wrapper" begin
+        n = 1.0u"m^-3"
+        T = 30000u"K"
+        d = Maxwellian(n, T)
+        𝐯 = ones(3) .* 1u"m/s"
+        @test d(𝐯) ≈ n * Maxwellian(T)(𝐯)
+        p = n * Unitful.k * T
+        d2 = Maxwellian(n, p)
+        @test d2(𝐯) ≈ d(𝐯)
     end
 end
 
@@ -55,6 +67,16 @@ end
 
         @test vdf(VPar(0u"m/s")) ≈ 5.916328704919331e-7 * 1u"s/m"
         @test vdf(VPerp(0u"m/s")) == 0u"s/m"
+    end
+
+    @testset "Physical distribution wrapper" begin
+        n = 1.0u"m^-3"
+        T = 30000u"K"
+        d = BiMaxwellian(n, T, T)
+        p = n * Unitful.k * T
+        d2 = BiMaxwellian(n, p, p)
+        𝐯 = ones(3) .* 1u"m/s"
+        @test d2(𝐯) ≈ d(𝐯)
     end
 
     @testset "Drift velocity" begin
@@ -113,6 +135,17 @@ end
         @test _pdf_1d.(vdf, [0u"m/s", 1u"m/s", 2u"m/s"]) ≈ [p0, p0, p0]
     end
 
+    @testset "Physical distribution wrapper" begin
+        n = 1.0u"m^-3"
+        T = 30000u"K"
+        κ = 4.0
+        d = Kappa(n, T, κ)
+        p = n * Unitful.k * T
+        d2 = Kappa(n, p, κ)
+        𝐯 = ones(3) .* 1u"m/s"
+        @test d2(𝐯) ≈ d(𝐯)
+    end
+
     @testset "Sampling" begin
         κ = 2.5
         vth = 1000.0
@@ -154,6 +187,18 @@ end
         vdf = BiKappa(T, T, 4.0)
         𝐯 = ones(3) .* 1u"m/s"
         @test vdf(𝐯) ≈ 3.7833969124639276e-19 * 1u"s^3/m^3"
+    end
+
+    @testset "Physical distribution wrapper" begin
+        n = 1.0u"m^-3"
+        T = 30000u"K"
+        κ = 4.0
+        d = BiKappa(n, T, T, κ)
+        p = n * Unitful.k * T
+        d2 = BiKappa(n, p, p, κ)
+        𝐯 = ones(3) .* 1u"m/s"
+        @test dimension(d2(𝐯)) == 𝐓^3 / 𝐋^6
+        @test d2(𝐯) ≈ d(𝐯)
     end
 
     @testset "Sampling variance" begin

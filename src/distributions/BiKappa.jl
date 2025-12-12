@@ -24,28 +24,30 @@ A_κ &= \\left(\\frac{1}{π κ}\\right)^{3/2} \\frac{1}{v_{th,∥} v_{th,⟂}^2}
 
 See also [`Kappa`](@ref), [`kappa_thermal_speed`](@ref)
 """
-struct BiKappa{T, K <: Real, TB, TVD} <: KappaDistribution{T, K}
+struct BiKappaPDF{T, K <: Real, TB, TVD} <: KappaDistribution{T, K}
     vth_perp::T
     vth_para::T
     κ::K
     b0::TB
     u0::TVD
 
-    function BiKappa(
+    function BiKappaPDF(
             vth_perp::T, vth_para::T, κ::K,
             u0::TVD = _zero_𝐯(T), b0::TB = SA[0.0, 0.0, 1.0];
             check_args = true
         ) where {T, K, TVD, TB}
-        @check_args BiKappa (κ, κ > 1.5) (vth_perp, vth_perp > zero(vth_perp)) (vth_para, vth_para > zero(vth_para)) (b0, length(b0) == 3) (u0, length(u0) == 3)
+        @check_args BiKappaPDF (κ, κ > 1.5) (vth_perp, vth_perp > zero(vth_perp)) (vth_para, vth_para > zero(vth_para)) (b0, length(b0) == 3) (u0, length(u0) == 3)
         BT = base_numeric_type(T)
         B_normalized = normalize(BT.(b0))
         return new{T, K, TB, TVD}(vth_perp, vth_para, κ, B_normalized, u0)
     end
 end
 
+BiKappa(args...; kw...) = BiKappaPDF(args...; kw...)
+
 _Aκ_bi(κ, vth_perp, vth_para) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / (vth_para * vth_perp^2)
 
-function _pdf(d::BiKappa, 𝐯)
+function _pdf(d::BiKappaPDF, 𝐯)
     d𝐯 = 𝐯 - d.u0
     dv_para = d𝐯 ⋅ d.b0
     v_perp_sq = sum(abs2, d𝐯 - dv_para * d.b0)
@@ -54,7 +56,7 @@ function _pdf(d::BiKappa, 𝐯)
     return _Aκ_bi(d.κ, d.vth_perp, d.vth_para) * expTerm
 end
 
-function _rand!(rng::AbstractRNG, d::BiKappa{T}, x) where {T}
+function _rand!(rng::AbstractRNG, d::BiKappaPDF{T}, x) where {T}
     bperp1 = normalize(d.b0 × get_least_parallel_basis_vector(d.b0))
     bperp2 = d.b0 × bperp1
 

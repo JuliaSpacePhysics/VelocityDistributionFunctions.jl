@@ -1,8 +1,11 @@
-using Unitful: upreferred
-using Unitful: Quantity, Temperature, Velocity
+using Unitful: upreferred, @derived_dimension
+using Unitful: Quantity, Temperature, Velocity, Pressure
 using Unitful: me, k
 import Unitful: ustrip
 using ConstructionBase: constructorof, getfields
+using Unitful: 𝐋
+@derived_dimension NumberDensity 𝐋^-3
+
 
 v_th(T, m) = upreferred(sqrt(2 * k * T / m))
 
@@ -14,9 +17,13 @@ const vth_kappa_ = kappa_thermal_speed
 Strip units from all fields of a velocity distribution, returning a new distribution
 with unitless values.
 """
-function ustrip(d::T) where {T <: VelocityDistribution}
+function ustrip(d::T) where {T <: AbstractVelocityPDF}
     fields = map(x -> ustrip.(x), getfields(d))
     return constructorof(T)(fields...; check_args = false)
+end
+
+function ustrip(d::VelocityDistribution)
+    return VelocityDistribution(ustrip(d.shape), ustrip(d.n))
 end
 
 
@@ -32,13 +39,17 @@ Kappa(T_perp::Temperature, κ, args...; mass = me, kw...) =
 BiKappa(T_perp::Temperature, T_para::Temperature, κ, args...; mass = me, kw...) =
     BiKappa(vth_kappa_(T_perp, κ, mass), vth_kappa_(T_para, κ, mass), κ, args...; kw...)
 
-Distributions.pdf(d::VelocityDistribution, v::AbstractVector{<:Velocity}) = _pdf(d, v)
+Distributions.pdf(d::AbstractVelocityPDF, v::AbstractVector{<:Velocity}) = _pdf(d, v)
 
-function Random.rand(d::VelocityDistribution{<:Quantity})
-    v_sample = similar(d.u0)
-    _rand!(Random.default_rng(), d, v_sample)
-    return v_sample
+for f in (:Maxwellian, :BiMaxwellian, :Kappa, :BiKappa)
+    @eval $f(n::NumberDensity, T::Temperature, args...; kw...) = VelocityDistribution(n, $f(T, args...; kw...))
 end
 
-# TODO: support multiple dimensions
-Random.rand(d::VelocityDistribution{<:Quantity}, dim::Int) = [rand(d) for _ in 1:dim]
+for f in (:Maxwellian, :Kappa)
+    @eval $f(n::NumberDensity, p::Pressure, args...; kw...) = VelocityDistribution(n, $f(p / (n * k), args...; kw...))
+end
+
+for f in (:BiMaxwellian, :BiKappa)
+    @eval $f(n::NumberDensity, p_perp::Pressure, p_para::Pressure, args...; kw...) =
+        VelocityDistribution(n, $f(p_perp / (n * k), p_para / (n * k), args...; kw...))
+end

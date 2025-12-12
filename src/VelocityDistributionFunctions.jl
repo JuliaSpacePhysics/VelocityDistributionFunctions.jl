@@ -15,6 +15,8 @@ include("distributions/Distributions.jl")
 export pitch_angle_distribution, tpitch_angle_distribution
 export directional_energy_spectra
 export VelocityDistribution, KappaDistribution, BiMaxwellian, BiKappa, Maxwellian, Kappa
+export AbstractVelocityPDF, AbstractVelocityDistribution
+export MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF
 export pdf
 export kappa_thermal_speed
 export VPar, VPerp
