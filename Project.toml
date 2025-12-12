@@ -1,6 +1,6 @@
 name = "VelocityDistributionFunctions"
 uuid = "63a0b508-f74a-48f7-b6e7-0e65849b0078"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
