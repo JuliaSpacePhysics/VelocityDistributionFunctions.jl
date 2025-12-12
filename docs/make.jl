@@ -1,23 +1,29 @@
 using VelocityDistributionFunctions
 using Documenter
+using DocumenterCitations
 
-DocMeta.setdocmeta!(VelocityDistributionFunctions, :DocTestSetup, :(using VelocityDistributionFunctions); recursive=true)
+const bib = CitationBibliography(joinpath(@__DIR__, "VelocityDistributionFunctions.jl.bib"))
+
+DocMeta.setdocmeta!(VelocityDistributionFunctions, :DocTestSetup, :(using VelocityDistributionFunctions); recursive = true)
 
 makedocs(;
-    modules=[VelocityDistributionFunctions],
-    authors="Beforerr <zzj956959688@gmail.com> and contributors",
-    sitename="VelocityDistributionFunctions.jl",
-    format=Documenter.HTML(;
-        canonical="https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl",
-        edit_link="main",
-        assets=String[],
+    modules = [VelocityDistributionFunctions],
+    authors = "Beforerr <zzj956959688@gmail.com> and contributors",
+    sitename = "VelocityDistributionFunctions.jl",
+    format = Documenter.HTML(;
+        canonical = "https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl",
+        edit_link = "main",
+        assets = String[],
     ),
-    pages=[
+    pages = [
         "Home" => "index.md",
+        "Distributions" => "distributions.md",
+        "Kappa" => "kappa.md",
     ],
+    plugins = [bib],
 )
 
 deploydocs(;
-    repo="github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl",
-    devbranch="main",
+    repo = "github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl",
+    devbranch = "main",
 )
