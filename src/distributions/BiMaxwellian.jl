@@ -10,25 +10,27 @@ f(𝐯) ∝  \\exp[-\\frac{(𝐯_⟂ - 𝐮_{0, ⟂})^{2}}{v_{\\mathrm{th}, ⟂}
 
 where the normalization constant is ``A = √π^{-3} / (v_{th,∥} v_{th,⟂}^2)``.
 """
-struct BiMaxwellian{T, TB, TVD} <: VelocityDistribution{T}
+struct BiMaxwellianPDF{T, TB, TVD} <: AbstractVelocityPDF
     vth_perp::T
     vth_para::T
     b0::TB
     u0::TVD
 
-    function BiMaxwellian(
+    function BiMaxwellianPDF(
             vth_perp::T, vth_para::T = vth_perp,
             u0::TVD = _zero_𝐯(T), b0::TB = SA[0.0, 0.0, 1.0];
             check_args = true
         ) where {T, TVD, TB}
-        @check_args BiMaxwellian (vth_perp, vth_perp >= zero(vth_perp)) (vth_para, vth_para >= zero(vth_para)) (b0, length(b0) == 3) (u0, length(u0) == 3)
+        @check_args BiMaxwellianPDF (vth_perp, vth_perp >= zero(vth_perp)) (vth_para, vth_para >= zero(vth_para)) (b0, length(b0) == 3) (u0, length(u0) == 3)
         BT = base_numeric_type(T)
         B_normalized = normalize(BT.(b0))
         return new{T, TB, TVD}(vth_perp, vth_para, B_normalized, u0)
     end
 end
 
-function _rand!(rng::AbstractRNG, d::BiMaxwellian{T}, x) where {T}
+BiMaxwellian(args...; kw...) = BiMaxwellianPDF(args...; kw...)
+
+function _rand!(rng::AbstractRNG, d::BiMaxwellianPDF{T}, x) where {T}
     bperp1 = normalize(d.b0 × get_least_parallel_basis_vector(d.b0))
     bperp2 = d.b0 × bperp1
     vpara = d.vth_para * randn(rng) / sqrt(2)
@@ -39,7 +41,7 @@ function _rand!(rng::AbstractRNG, d::BiMaxwellian{T}, x) where {T}
 end
 
 # Generalal pdf that supports unitful inputs
-function _pdf(d::BiMaxwellian, 𝐯::AbstractVector{T}) where {T}
+function _pdf(d::BiMaxwellianPDF, 𝐯::AbstractVector{T}) where {T}
     d𝐯 = 𝐯 - d.u0
     dv_para = d𝐯 ⋅ d.b0
     v_perp_sq = sum(abs2, d𝐯 - dv_para * d.b0)
@@ -56,10 +58,10 @@ Normalized PDF for the parallel velocity
 f(v) = 1 / (√π vₜₕ) · exp[-(v/vₜₕ)²]
 ```
 """
-function Distributions.pdf(d::BiMaxwellian, v::VPar)
+function Distributions.pdf(d::BiMaxwellianPDF, v::VPar)
     return exp(-((v.val - d.u0 ⋅ d.b0) / d.vth_para)^2) / √π / d.vth_para
 end
 
-function Distributions.pdf(d::BiMaxwellian, v::VPerp)
+function Distributions.pdf(d::BiMaxwellianPDF, v::VPerp)
     return exp(-((v.val - d.u0 ⋅ d.b0) / d.vth_perp)^2) * 2 * v.val / d.vth_perp^2
 end

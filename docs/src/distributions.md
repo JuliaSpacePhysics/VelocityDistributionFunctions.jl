@@ -37,6 +37,12 @@ T = 30000u"K" # Temperature
 vdf = Maxwellian(T)
 
 𝐯 = ones(3) .* 1u"m/s"
+@assert vdf(𝐯) ≈ 2.070889302986066e-19 * 1u"s^3/m^3"
+
+# If the density is given, it will return a VelocityDistribution instead of a PDF
+n = 1u"m^-3"
+p = n * Unitful.k * T
+vdf = Maxwellian(n, p)
 vdf(𝐯)
 ```
 

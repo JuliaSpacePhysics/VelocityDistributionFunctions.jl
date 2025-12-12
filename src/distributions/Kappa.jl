@@ -3,7 +3,7 @@ A Kappa distribution has a nearly Maxwellian core at low energies, and highenerg
 
 See also [pierrardSuprathermalPopulationsTheir2021](@citet) and [pierrardKappaDistributionsTheory2010](@citet).
 """
-abstract type KappaDistribution{T, K} <: VelocityDistribution{T} end
+abstract type KappaDistribution{T, K} <: AbstractVelocityPDF end
 
 """
     Kappa(vth, κ, 𝐮₀=[0, 0, 0])
@@ -22,16 +22,18 @@ Kappa index must be > 1.5 for finite variance. For large κ, the distribution ap
 
 See also [`kappa_thermal_speed`](@ref).
 """
-struct Kappa{T, K <: Real, U} <: KappaDistribution{T, K}
+struct KappaPDF{T, K <: Real, U} <: KappaDistribution{T, K}
     vth::T
     κ::K
     u0::U
 
-    function Kappa(vth::T, κ::K, u0::U = _zero_𝐯(T); check_args = true) where {T, K, U}
-        @check_args Kappa (κ, κ > 1.5) (vth, vth > zero(vth)) (u0, length(u0) == 3)
+    function KappaPDF(vth::T, κ::K, u0::U = _zero_𝐯(T); check_args = true) where {T, K, U}
+        @check_args KappaPDF (κ, κ > 1.5) (vth, vth > zero(vth)) (u0, length(u0) == 3)
         return new{T, K, U}(vth, κ, u0)
     end
 end
+
+Kappa(args...; kw...) = KappaPDF(args...; kw...)
 
 """
     kappa_thermal_speed(T, κ, m)
@@ -49,13 +51,13 @@ end
 
 _Aκ(κ, vth) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / vth^3
 
-function _pdf(d::Kappa, 𝐯)
+function _pdf(d::KappaPDF, 𝐯)
     w² = sqdist(𝐯, d.u0) / (d.κ * d.vth^2)
     expTerm = (1 + w²)^(-(d.κ + 1))
     return _Aκ(d.κ, d.vth) * expTerm
 end
 
-function _pdf_1d(d::Kappa, vx)
+function _pdf_1d(d::KappaPDF, vx)
     w² = (vx - d.u0[1])^2 / (d.κ * d.vth^2)
     expTerm = (1 + w²)^(-d.κ)
     coeff = gamma(d.κ) / (sqrt(π * d.κ) * d.vth * gamma(d.κ - 0.5))
@@ -79,7 +81,7 @@ into a Maxwellian with a Chi-squared distributed temperature variance).
 - https://www.wikiwand.com/en/articles/Student%27s_t-distribution
 - [Multivariate t-distribution](https://www.wikiwand.com/en/articles/Multivariate_t-distribution)
 """
-function _rand!(rng::AbstractRNG, d::Kappa, x)
+function _rand!(rng::AbstractRNG, d::KappaPDF, x)
     # Derived from matching power laws: -(κ+1) == -(ν+3)/2
     ν = 2 * d.κ - 1 # degrees of freedom (ν)
     ξ = rand(rng, Chisq(ν))
