@@ -1,4 +1,11 @@
 """
+A Kappa distribution has a nearly Maxwellian core at low energies, and highenergy tails decreasing as suprathermal power laws that can be significantly broader than exponential tails.
+
+See also [pierrardSuprathermalPopulationsTheir2021](@citet) and [pierrardKappaDistributionsTheory2010](@citet).
+"""
+abstract type KappaDistribution{T, K} <: VelocityDistribution{T} end
+
+"""
     Kappa(vth, κ, 𝐮₀=[0, 0, 0])
     Kappa(T::Temperature, κ, 𝐮₀=[0, 0, 0]; mass = me)
     
@@ -13,9 +20,9 @@ where the normalization constant is ``A_3 = Γ(κ + 1) / Γ(κ - 1/2) / (π κ v
 # Notes
 Kappa index must be > 1.5 for finite variance. For large κ, the distribution approaches a Maxwellian. Smaller κ values produce stronger high-energy tails.
 
-See also [pierrardSuprathermalPopulationsTheir2021](@citet) and [pierrardKappaDistributionsTheory2010](@citet).
+See also [`kappa_thermal_speed`](@ref).
 """
-struct Kappa{T, K <: Real, U} <: VelocityDistribution{T}
+struct Kappa{T, K <: Real, U} <: KappaDistribution{T, K}
     vth::T
     κ::K
     u0::U
@@ -32,7 +39,7 @@ end
 Return the most probable speed of a (modified) kappa distribution with κ-Independent temperature `T`.
 
 ```math
-V_{th,i} = \\sqrt{\\frac{κ - 3/2}{κ} \\frac{2 k_B T}{m}}
+V_{th} = \\sqrt{\\frac{κ - 3/2}{κ} \\frac{2 k_B T}{m}}
 ```
 """
 function kappa_thermal_speed(T, κ, m)

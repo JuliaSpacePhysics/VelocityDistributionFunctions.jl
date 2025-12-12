@@ -5,10 +5,9 @@ This package provides implementations of common velocity distribution functions 
 ```@docs; canonical=false
 Maxwellian
 BiMaxwellian
-Kappa
 ```
 
-For more details about Kappa distribution, see [Kappa](kappa.md).
+For Kappa distribution, see [Kappa](kappa.md).
 
 ## Maxwellian Distribution
 

@@ -1,13 +1,11 @@
 # Kappa Distribution
 
-The Kappa distribution has power-law tails and is commonly observed in space plasmas. Its 3D PDF $f(\mathbf{v})$ is:
+The Kappa distribution has power-law tails and is commonly observed in space plasmas.
 
-$$
-f(\mathbf{v}) = A_3 \left(1 + \frac{|\mathbf{v} - \mathbf{u}_0|^2}{\kappa v_{th}^2}\right)^{-(\kappa + 1)}$$
-
-where the 3D normalization constant $A_3$ is:
-
-$$A_3 = \frac{\Gamma(\kappa + 1)}{(\pi \kappa v_{th}^2)^{3/2} \Gamma(\kappa - 1/2)}$$
+```@docs; canonical=false
+KappaDistribution
+BiKappa
+```
 
 ```@example kappa
 using VelocityDistributionFunctions

@@ -15,9 +15,8 @@ Strip units from all fields of a velocity distribution, returning a new distribu
 with unitless values.
 """
 function ustrip(d::T) where {T <: VelocityDistribution}
-    props = getfields(d)
-    stripped_props = map(ustrip, props)
-    return constructorof(T)(stripped_props...; check_args = false)
+    fields = map(x -> ustrip.(x), getfields(d))
+    return constructorof(T)(fields...; check_args = false)
 end
 
 
