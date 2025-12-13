@@ -3,16 +3,16 @@ A Kappa distribution has a nearly Maxwellian core at low energies, and highenerg
 
 See also [pierrardSuprathermalPopulationsTheir2021](@citet) and [pierrardKappaDistributionsTheory2010](@citet).
 """
-abstract type KappaDistribution{T, K} <: AbstractVelocityPDF end
+abstract type KappaDistribution{T, K} <: AbstractVelocityPDF{T} end
 
 """
-    Kappa(vth, κ, 𝐮₀=[0, 0, 0])
-    Kappa(T::Temperature, κ, 𝐮₀=[0, 0, 0]; mass = me)
+    KappaPDF(vth, κ)
+    KappaPDF(T::Temperature, κ; mass = me)
     
-Kappa velocity distribution with index `κ` and thermal velocity `vth`, with optional drift velocity `𝐮₀`.
+Kappa velocity distribution with index `κ` and thermal velocity `vth`.
 
 ```math
-f(𝐯) ∝ [1 + |𝐯 - 𝐮₀|²/(κ·vₜₕ²)]^{-(κ+1)}
+f(𝐯) ∝ [1 + |𝐯|²/(κ·vₜₕ²)]^{-(κ+1)}
 ```
 
 where the normalization constant is ``A_3 = Γ(κ + 1) / Γ(κ - 1/2) / (π κ v_{th}^2)^{3/2}``.
@@ -22,18 +22,15 @@ Kappa index must be > 1.5 for finite variance. For large κ, the distribution ap
 
 See also [`kappa_thermal_speed`](@ref).
 """
-struct KappaPDF{T, K <: Real, U} <: KappaDistribution{T, K}
+struct KappaPDF{T, K <: Real} <: KappaDistribution{T, K}
     vth::T
     κ::K
-    u0::U
 
-    function KappaPDF(vth::T, κ::K, u0::U = _zero_𝐯(T); check_args = true) where {T, K, U}
-        @check_args KappaPDF (κ, κ > 1.5) (vth, vth > zero(vth)) (u0, length(u0) == 3)
-        return new{T, K, U}(vth, κ, u0)
+    function KappaPDF(vth::T, κ::K; check_args = true) where {T, K}
+        @check_args KappaPDF (κ, κ > 1.5) (vth, vth > zero(vth))
+        return new{T, K}(vth, κ)
     end
 end
-
-Kappa(args...; kw...) = KappaPDF(args...; kw...)
 
 """
     kappa_thermal_speed(T, κ, m)
@@ -52,13 +49,13 @@ end
 _Aκ(κ, vth) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / vth^3
 
 function _pdf(d::KappaPDF, 𝐯)
-    w² = sqdist(𝐯, d.u0) / (d.κ * d.vth^2)
+    w² = sum(abs2, 𝐯) / (d.κ * d.vth^2)
     expTerm = (1 + w²)^(-(d.κ + 1))
     return _Aκ(d.κ, d.vth) * expTerm
 end
 
 function _pdf_1d(d::KappaPDF, vx)
-    w² = (vx - d.u0[1])^2 / (d.κ * d.vth^2)
+    w² = vx^2 / (d.κ * d.vth^2)
     expTerm = (1 + w²)^(-d.κ)
     coeff = gamma(d.κ) / (sqrt(π * d.κ) * d.vth * gamma(d.κ - 0.5))
     return coeff * expTerm
@@ -75,7 +72,7 @@ into a Maxwellian with a Chi-squared distributed temperature variance).
 
 1. Sample from Chi-squared: ξ ~ ChiSq(2κ - 1)
 2. Sample from Isotropic Normal: Z ~ Normal(0, I)
-3. ``𝐯 = 𝐮₀ + vₜₕ * √(κ / ξ) * Z``
+3. ``𝐯 = vₜₕ * √(κ / ξ) * Z``
 
 ## References
 - https://www.wikiwand.com/en/articles/Student%27s_t-distribution
@@ -87,5 +84,5 @@ function _rand!(rng::AbstractRNG, d::KappaPDF, x)
     ξ = rand(rng, Chisq(ν))
     Z = randn(rng, 3)
     scale = d.vth * sqrt(d.κ / ξ) # variance scaling factor
-    return x .= d.u0 .+ scale .* Z
+    return x .= scale .* Z
 end

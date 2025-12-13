@@ -4,7 +4,7 @@ The Kappa distribution has power-law tails and is commonly observed in space pla
 
 ```@docs; canonical=false
 KappaDistribution
-BiKappa
+BiKappaPDF
 ```
 
 ```@example kappa
