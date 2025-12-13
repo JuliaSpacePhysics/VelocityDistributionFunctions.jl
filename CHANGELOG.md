@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+## [0.2.0] - 2025-12-12
 
 ### Changed
 
@@ -12,3 +14,5 @@
 ### Added
 
 - `ShiftedPDF` wrapper for representing drifted distributions without duplicating drift logic across each PDF.
+
+[Unreleased]: https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/compare/v0.2.0...HEAD

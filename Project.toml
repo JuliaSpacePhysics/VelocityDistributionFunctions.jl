@@ -1,6 +1,6 @@
 name = "VelocityDistributionFunctions"
 uuid = "63a0b508-f74a-48f7-b6e7-0e65849b0078"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
@@ -22,7 +22,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 [compat]
 BaseType = "0.2.0"
 Bumper = "0.7"
-ConstructionBase = "1.6.0"
+ConstructionBase = "1"
 Distributions = "0.25"
 LinearAlgebra = "1"
 LoopVectorization = "0.12"
