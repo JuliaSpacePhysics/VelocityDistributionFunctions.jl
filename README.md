@@ -21,13 +21,16 @@ Some functions provided here are intended to be used as building blocks for miss
     - [x] Maxwellian / BiMaxwellian
     - [x] Kappa / BiKappa
     - [ ] Powerlaw
-    - [ ] Different forms (e.g. phase space density / flux / energy flux)
+    - [ ] Different forms (e.g. velocity distribution / pdg / flux / energy flux)
+    - [ ] Define algebraic operations on VDFs (e.g. addition, subtraction, multiplication, division)
 - [x] Generate pitch-angle distributions (PADs) from VDFs
     - [x] New PADs by averaging over multiple energy channels
 - [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs
 - [ ] Energy/gyro-phase spectra
-- [ ] Moments
+- [ ] Moments / statistics
 - [ ] Extend to simulation data
+- [ ] Volume visualization : scatter, volume, isosurface modes...
+- [ ] Dispersion analysis
 - [ ] Validation and Benchmarks
 
 ## Elsewhere
