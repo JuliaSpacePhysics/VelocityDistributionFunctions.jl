@@ -21,3 +21,7 @@ function _rand!(rng::AbstractRNG, d::ShiftedPDF, x)
     _rand!(rng, d.base, x)
     return x .+= d.u0
 end
+
+function Base.getproperty(d::ShiftedPDF, sym::Symbol)
+    return sym in fieldnames(ShiftedPDF) ? getfield(d, sym) : getproperty(d.base, sym)
+end

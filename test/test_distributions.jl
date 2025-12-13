@@ -18,6 +18,7 @@ using Unitful: 𝐓, 𝐋, dimension
         @test d.n == density
         @test d.vth == 1.0
         @test identity.(d) == d
+        @test Maxwellian(density, 1.0; u0 = [1, 0, 0]).vth == 1.0
 
         # Invalid construction
         @test_throws "DomainError with -1.0:" Maxwellian(-1.0)  # negative vth
@@ -107,7 +108,6 @@ end
         Random.seed!(42)
         u0 = [0.0, 0.0, 3.0]  # Drift along z-axis
         d = BiMaxwellian(1.0, 1.0; u0)
-
         # Sample and check mean velocity
         n = 256
         samples = rand(d, n)
