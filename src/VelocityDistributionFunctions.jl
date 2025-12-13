@@ -2,7 +2,6 @@ module VelocityDistributionFunctions
 
 using Tullio: @tullio
 using Bumper
-using LoopVectorization
 using LinearAlgebra
 using StaticArrays
 
