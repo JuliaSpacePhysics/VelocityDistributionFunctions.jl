@@ -21,8 +21,9 @@ Some functions provided here are intended to be used as building blocks for miss
     - [x] Maxwellian / BiMaxwellian
     - [x] Kappa / BiKappa
     - [ ] Powerlaw
-    - [ ] Different forms (e.g. velocity distribution / pdg / flux / energy flux)
+    - [ ] Different forms (e.g. velocity distribution / pdf / flux / energy flux)
     - [ ] Define algebraic operations on VDFs (e.g. addition, subtraction, multiplication, division)
+    - [ ] Fitting VDFs to data
 - [x] Generate pitch-angle distributions (PADs) from VDFs
     - [x] New PADs by averaging over multiple energy channels
 - [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs
@@ -43,3 +44,4 @@ Some functions provided here are intended to be used as building blocks for miss
     - [mms.mms_part_getspec](https://pyspedas.readthedocs.io/en/latest/mms_analysis.html#pyspedas.projects.mms.mms_part_getspec): Generate spectra and moments from 3D MMS particle data
     - [erg_analysis](https://pyspedas.readthedocs.io/en/latest/erg_analysis.html): Arase (ERG) Particle Tools
 - [pyrfu](https://pyrfu.readthedocs.io/en/latest/index.html): Python package for working with Magnetospheric MultiScale (MMS) mission data
+- [SpectralFitting.jl](https://juliaastro.org/SpectralFitting/stable/): Fast and flexible spectral fitting in Julia.
