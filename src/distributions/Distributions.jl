@@ -51,7 +51,8 @@ end
 include("VDFsUnitfulExt.jl")
 
 function Distributions.pdf(vdf::Union{MaxwellianPDF, KappaPDF}, v::V)
-    return 4π * v.val^2 * _pdf(vdf, SA[v.val, 0, 0])
+    v² = v.val^2
+    return 4π * v² * _pdf_v²(vdf, v²)
 end
 
 function Distributions.pdf(d::ShiftedPDF, v::VPar)

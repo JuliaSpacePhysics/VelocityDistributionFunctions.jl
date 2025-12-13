@@ -48,9 +48,11 @@ end
 
 _Aκ(κ, vth) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / vth^3
 
-function _pdf(d::KappaPDF, 𝐯)
-    w² = sum(abs2, 𝐯) / (d.κ * d.vth^2)
-    expTerm = (1 + w²)^(-(d.κ + 1))
+_pdf(d::KappaPDF, 𝐯) = _pdf_v²(d, sum(abs2, 𝐯))
+
+function _pdf_v²(d::KappaPDF, v²)
+    w² = v² / (d.κ * d.vth^2)
+    expTerm = (1 + w²)^(-d.κ - 1)
     return _Aκ(d.κ, d.vth) * expTerm
 end
 
