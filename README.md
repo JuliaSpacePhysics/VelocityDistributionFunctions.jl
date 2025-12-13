@@ -11,7 +11,7 @@ Analysis tools for particle velocity distribution functions (VDFs).
 
 **Installation**: at the Julia REPL, run `using Pkg; Pkg.add("VelocityDistributionFunctions")`
 
-**Documentation**: [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/dev/)
+**Documentation**: [![Dev](https://img.shields.io/badge/docs-dev-blue.svg?logo=julia)](https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/dev/)
 
 Some functions provided here are intended to be used as building blocks for mission-specific particle distribution tools. Mission-specific wrappers will generally be needed to load the particle data to be operated on, perform calibration, sanitization, and other preliminary steps.
 
