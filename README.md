@@ -31,7 +31,7 @@ Some functions provided here are intended to be used as building blocks for miss
 - [ ] Moments / statistics
 - [ ] Extend to simulation data
 - [ ] Volume visualization : scatter, volume, isosurface modes...
-- [ ] Dispersion analysis
+- [ ] Dispersion analysis (see also [PlasmaWaves.jl](https://github.com/JuliaSpacePhysics/PlasmaWaves.jl))
 - [ ] Validation and Benchmarks
 
 ## Elsewhere
@@ -45,3 +45,4 @@ Some functions provided here are intended to be used as building blocks for miss
     - [erg_analysis](https://pyspedas.readthedocs.io/en/latest/erg_analysis.html): Arase (ERG) Particle Tools
 - [pyrfu](https://pyrfu.readthedocs.io/en/latest/index.html): Python package for working with Magnetospheric MultiScale (MMS) mission data
 - [SpectralFitting.jl](https://juliaastro.org/SpectralFitting/stable/): Fast and flexible spectral fitting in Julia.
+- [GDF](https://srijaniiserprinceton.github.io/GDF/index.html): gyrotorpic distribution functions, Slepian basis function based reconstructions to recover distribution functions
