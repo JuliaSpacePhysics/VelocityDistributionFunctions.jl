@@ -8,3 +8,4 @@ end
 
 include("test_pad.jl")
 include("test_distributions.jl")
+include("test_particles.jl")
