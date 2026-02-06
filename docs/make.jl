@@ -19,6 +19,7 @@ makedocs(;
         "Home" => "index.md",
         "Distributions" => "distributions.md",
         "Kappa" => "kappa.md",
+        "Math notes for moment calculations" => "moment_note.md",
     ],
     plugins = [bib],
 )

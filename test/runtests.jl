@@ -8,3 +8,5 @@ end
 
 include("test_pad.jl")
 include("test_distributions.jl")
+include("test_omega_weights.jl")
+VERSION >= v"1.12" && include("test_moments.jl")

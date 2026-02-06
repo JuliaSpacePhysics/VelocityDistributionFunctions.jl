@@ -1,18 +1,24 @@
 module VelocityDistributionFunctions
 
 using Tullio: @tullio
-using Bumper
+using Bumper: @alloc, @no_escape
 using LinearAlgebra
 using StaticArrays
+using MuladdMacro: @muladd
+using Base: tail
+using StructArrays: StructArray
+using OhMyThreads: tforeach
 
 include("utils.jl")
 include("spectra.jl")
 include("pad.jl")
 include("flux.jl")
+include("moments.jl")
 include("distributions/Distributions.jl")
 
 export pitch_angle_distribution, tpitch_angle_distribution
 export directional_energy_spectra
+export plasma_moments
 export VelocityDistribution, KappaDistribution, BiMaxwellian, BiKappa, Maxwellian, Kappa
 export AbstractVelocityPDF, AbstractVelocityDistribution
 export MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF, ShiftedPDF
