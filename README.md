@@ -28,7 +28,7 @@ Some functions provided here are intended to be used as building blocks for miss
     - [x] New PADs by averaging over multiple energy channels
 - [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs
 - [ ] Energy/gyro-phase spectra
-- [ ] Moments / statistics
+- [x] Plasma moments (density, velocity, pressure, temperature, heat flux) from 3D distributions
 - [ ] Extend to simulation data
 - [ ] Volume visualization : scatter, volume, isosurface modes...
 - [ ] Dispersion analysis (see also [PlasmaWaves.jl](https://github.com/JuliaSpacePhysics/PlasmaWaves.jl))
