@@ -20,7 +20,8 @@ const ref_url = "https://github.com/JuliaSpacePhysics/VelocityDistributionFuncti
     ntimes = length(saved["times"])
     dists = _dict2nt.(dists_data)
 
-    moms = plasma_moments(dists, scpot_data; mass = dists[1].mass * 1.0e-10)
+    moms = plasma_moments(dists, scpot_data; mass = dists[1].mass * 1.0e-10, charge = dists[1].charge)
+    # @b plasma_moments($dists, $scpot_data; mass = $dists[1].mass * 1.0e-10, charge = $dists[1].charge)
     @test moms.density ≈ ref["density"]
     @test moms.avgtemp ≈ ref["avgtemp"]
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"])
