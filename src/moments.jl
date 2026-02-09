@@ -2,43 +2,54 @@
 
 _clean_energy(E) = ifelse(E <= 0, 0.1, E)
 _weight(E::T, dE::T, ΔU::T) where {T} = clamp((E + ΔU) / dE + T(0.5), zero(T), one(T))
-_mask(data::T, flag) where {T} = ifelse(iszero(flag), zero(T), data)
-_theta(theta, J) = theta[J]
-_theta(theta::AbstractVector, J::CartesianIndex{2}) = theta[J[2]]
-_phi(phi, J) = phi[J]
-_phi(phi::AbstractVector, J::CartesianIndex{2}) = phi[J[1]]
 
 include("moments/omega_weights.jl")
 include("moments/helpers.jl")
 include("moments/compute.jl")
 
-"""
-    plasma_moments(dists::AbstractVector, sc_pots, magfs; kw...)
+# ── High-level time-series interface ─────────────────────────────────────────
 
-Batch-compute plasma moments for multiple distributions, returning a `StructArray`.
 """
-function plasma_moments(dists::AbstractVector, sc_pots; kw...)
-    structT = Base.return_types(_plasma_moments, Tuple{eltype(dists), eltype(sc_pots), Nothing})[1]
-    result = StructArray{structT}(undef, length(dists))
-    tforeach(eachindex(dists, sc_pots)) do i
-        result[i] = plasma_moments(dists[i], sc_pots[i]; kw...)
+    tmoments(data, theta, phi, energy, sc_pot, magf; tdim, edim, kw...)
+
+Compute plasma moments for every timestep in a multi-time raw distribution array.
+
+Loops over the time dimension `tdim`, calling [`plasma_moments`](@ref) for each slice, and returns a `StructArray`.
+
+## Keyword Arguments
+- `tdim`:        Which axis of `data` is time (**required**).
+
+## Returns
+A `StructArray` of moment `NamedTuple`s, one per timestep.
+
+## Example
+```julia
+tmoments(data, theta, phi, energy; species=:H, tdim=1, edim=4)
+```
+"""
+@inline function tmoments(data, theta, phi, energy, sc_pot = 0, magf = nothing; tdim = ndims(data), edim = 1, kw...)
+    nt = size(data, tdim)
+    # After removing tdim, edim shifts down by 1 if it was after tdim
+    edim_slice = edim > tdim ? edim - 1 : edim
+
+    result = tmap(1:nt) do i
+        efluxi = selectdim(data, tdim, i)
+        disti = (; data = efluxi, theta = _vector(theta, i), phi = _vector(phi, i), energy = _vector(energy, i))
+        plasma_moments(
+            disti, _scalar(sc_pot, i), _vector(magf, i);
+            edim = edim_slice, kw...
+        )
     end
-    return result
+    return StructArray(result)
 end
 
-function plasma_moments(dists::AbstractVector, sc_pots, magfs; kw...)
-    structT = Base.return_types(_plasma_moments, Tuple{eltype(dists), eltype(sc_pots), eltype(magfs)})[1]
-    result = StructArray{structT}(undef, length(dists))
-    tforeach(eachindex(dists, sc_pots, magfs)) do i
-        result[i] = plasma_moments(dists[i], sc_pots[i], magfs[i]; kw...)
-    end
-    return result
-end
-
+# ── High-level single-timestep interface ─────────────────────────────────────
 """
-    plasma_moments(dist, sc_pot=0, magf=nothing; mass=dist.mass)
+    plasma_moments(dist, sc_pot=0, magf=nothing; mass, charge, edim)
 
-Compute all plasma moments from a single particle velocity distribution.
+Compute all plasma moments from a single distribution on a spherical energy-angle grid.
+
+Handles unit conversion, species mass/charge lookup, and coordinate transforms internally.
 
 ## Arguments
 - `dist`:   Distribution struct with fields `data`, `energy`, `theta`, `phi`, `mass`, `charge`.
@@ -47,26 +58,24 @@ Compute all plasma moments from a single particle velocity distribution.
             If `nothing` (default), field-aligned quantities are omitted.
 
 ## Keyword Arguments
-- `mass`:    Override particle mass. Default: use `dist.mass`.
-- `edim`:    Energy axis index in `data` (default `1`). When `edim ≠ 1`, a
-             `permutedims` moves energy to the first axis internally.
+- `species`: Species symbol (`:H`, `:He`, `:O`, `:e`). Determines mass, charge, and the `A` parameter for unit conversion. Defaults to `:H`.
+- `edim`: Energy axis index in `data` (default `1`). When `edim ≠ 1`, a `permutedims` moves energy to the first axis internally.
+- `units`: Input unit system (`:eflux`, `:flux`, `:df_km`, `:df_cm`). Default `:eflux` (no conversion).
 
 ## Returns
 A `NamedTuple` of plasma moments.
 
 ## Assumptions
-The input distribution must be a single-time 3D particle velocity distribution on a spherical energy-angle grid with fields:
+The input distribution must have the following fields:
 
 - `data`:    Distribution values in energy flux units `[eV/(cm²·s·sr·eV)]`
 - `energy` and `denergy`:  Energy bin centers and widths `[eV]` (`denergy` is optional; estimated from `energy` if absent)
 - `theta` and `dtheta`:   Latitude angle bin centers and widths `[deg]` (`dtheta`/`dphi` optional; estimated from centres if absent)
 - `phi` and `dphi`:     Azimuthal angle bin centers  and widths `[deg]`
-- `bins`:    Bin mask (`1` = valid, `0` = masked) (optional; defaults to all-ones)
 - `mass`:    Particle mass `[eV/(cm/s)²]`
 - `charge`:  Particle charge `[elementary charges, signed]` (optional; defaults to `1`)
 
-`data` and `bins` may be either 2D `(n_energy, n_angles)` (reformed/flattened)
-or 3D `(n_energy, n_phi, n_theta)` (unreformed).
+`data` may be either 2D `(n_energy, n_angles)` (reformed/flattened) or 3D `(n_energy, n_phi, n_theta)` (unreformed).
 
 Energy arrays (`energy`, `denergy`) may be supplied as:
 - a full array matching the shape of `data`, when energy bins vary across angles, or
@@ -80,64 +89,49 @@ Angle arrays (`theta`, `dtheta`, `phi`, `dphi`) may be supplied as:
 - `theta`: latitude / elevation angle (−90° to 90°), **not** colatitude
 - `phi`: azimuth (0° to 360°)
 """
-@inline plasma_moments(dist, scpot = 0, magf = nothing; kw...) =
-    _plasma_moments(dist, scpot, magf; kw...)
+@inline function plasma_moments(dist, scpot = 0, magf = nothing; species = :H, units = :eflux, edim = 1, kw...)
+    s = species_info(species)
+    dtheta = get(dist, :dtheta, nothing)
+    dphi = get(dist, :dphi, nothing)
+    dE = get(dist, :denergy, nothing)
+    c, E_exp = _conversion_coeff(units, :eflux, s.A)
+    return _plasma_moments(dist.data, dist.theta, dist.phi, dist.energy, scpot, magf; coefficient = c, E_exp, mass = s.mass, charge = s.charge, dtheta, dphi, dE, edim, kw...)
+end
 
-@inline function _plasma_moments(dist, sc_pot, magf; mass = nothing, charge = nothing, edim = 1, masks = dist.bins)
-    mass = @something mass dist.mass
+_osize(data, dim) = ntuple(i -> size(data, i < dim ? i : i + 1), ndims(data) - 1)
 
-    # Move energy axis to dim 1 when edim ≠ 1
-    data = dist.data
-    N = ndims(data)
-    if edim != 1
-        perm = ntuple(i -> i == 1 ? edim : (i <= edim ? i - 1 : i), N)
-        data = permutedims(data, perm)
-    end
+@inline function _plasma_moments(data, theta, phi, _energy, sc_pot, magf; coefficient = 1.0, E_exp = 0, mass = _PROTON_MASS, charge = 1.0, dtheta = nothing, dphi = nothing, dE = nothing, edim = 1)
     T = eltype(data)
-    dims = size(data)
-    edims = size(dist.energy)
-    adims = Base.tail(dims)   # angle-only dimensions (everything after energy)
-    phi, theta = dist.phi, dist.theta
-    dtheta = hasproperty(dist, :dtheta) ? dist.dtheta : _bin_widths(theta)
-    dphi = hasproperty(dist, :dphi) ? dist.dphi : _bin_widths(phi)
-    charge = @something charge one(T)
+    edims = size(_energy)
+    adims = _osize(data, edim)   # angle-only dimensions (everything after energy)
+    thetadims = size(theta)
+    phidims = size(phi)
     ΔU = T(charge * sc_pot)
 
     return @no_escape begin
+        Escale = @alloc(T, edims...)
         energy = @alloc(T, edims...)
         e_inf = @alloc(T, edims...)
-        # Full-sized work arrays
-        fE_kernel = @alloc(T, dims...)
-        fv_d3v_kernel = @alloc(T, dims...)
-        omega = @alloc(T, 10, adims...) # Omega weights: angle-only (no energy axis)
+        v_inf = @alloc(T, edims...)
+        dtheta = @something(dtheta, _bin_widths!(@alloc(T, thetadims...), theta))
+        dphi = @something(dphi, _bin_widths!(@alloc(T, phidims...), phi, 360))
+        Omega = @alloc(T, 10, adims...) # Omega weights: angle-only (no energy axis)
 
-        @. energy = _clean_energy(dist.energy)
-        @. e_inf = max(energy + ΔU, zero(T))
+        @. energy = _clean_energy(_energy)
+        dE = @something(dE, _compute_denergy!(@alloc(T, edims...), energy))
 
-        dE = hasproperty(dist, :denergy) ? dist.denergy :
-            _compute_denergy!(@alloc(T, edims...), energy)
-
-        omega_weights!(omega, theta, phi, dtheta, dphi)
-        domega0 = reshape(selectdim(omega, 1, 1), 1, adims...)
-        Omega_j = selectdim(omega, 1, 2:4)
-        Omega_ij = selectdim(omega, 1, 5:10)
+        omega_weights!(Omega, theta, phi, dtheta, dphi)
 
         # Common derived arrays
-        if isnothing(masks)
-            @. fE_kernel = data * dE * _weight(energy, dE, ΔU) / energy / energy
-        else
-            _bins = edim != 1 ? permutedims(masks, perm) : masks
-            @. fE_kernel = _mask(data, _bins) * dE * _weight(energy, dE, ΔU) / energy / energy
-        end
-        @. fv_d3v_kernel = fE_kernel * sqrt(e_inf) * domega0
-
-        density = sqrt(mass / 2) * sum(fv_d3v_kernel)
-
-        flux, _mftens, eflux = compute_fused_moments(fE_kernel, e_inf, Omega_j, Omega_ij)
+        @. Escale = coefficient * dE * _weight(energy, dE, ΔU) * energy^(E_exp - 2)
+        @. e_inf = max(energy + ΔU, zero(T))
+        _den, flux, _mftens, eflux = compute_fused_moments(data, Escale, e_inf, Omega; edim)
+        density = sqrt(mass / 2) * _den
         mftens = _mftens .* T(sqrt(2 * mass))
         velocity = flux ./ density
 
-        qflux = compute_heat_flux(fv_d3v_kernel, theta, phi, e_inf, mass, velocity)
+        @. v_inf = sqrt(2 / mass * e_inf) # v_inf
+        qflux = compute_heat_flux(data, Omega, theta, phi, v_inf, Escale, mass, velocity; edim)
         ptens = compute_pressure_tensor(mftens, velocity, flux, mass)
         temp = compute_temperature(ptens, density, mass)
 
