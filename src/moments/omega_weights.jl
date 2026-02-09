@@ -1,5 +1,12 @@
 # https://github.com/spedas/pyspedas/blob/master/pyspedas/particles/moments/moments_3d_omega_weights.py
 
+_theta(theta, J) = theta[J]
+_theta(theta::AbstractVector, J::CartesianIndex{2}) = theta[J[2]]
+_theta(theta::Real, J) = theta
+_phi(phi, J) = phi[J]
+_phi(phi::AbstractVector, J::CartesianIndex{2}) = phi[J[1]]
+_phi(phi::Real, J) = phi
+
 # Solid angle per bin: dΩ ∝ |sin(θ+dθ/2) - sin(θ-dθ/2)| · dφ
 function _domega(θ, dθ, dφ)
     sth2 = sin(θ + dθ / 2)

@@ -17,6 +17,7 @@ Usage (from project root):
 """
 
 using PySPEDAS
+using PySPEDAS.Projects
 using PySPEDAS.PythonCall
 using JLD2
 using Chairmarks
@@ -31,8 +32,9 @@ using Chairmarks
 
 # ── 1. Run pyspedas to generate reference moments ──────────────────────
 @info "Running PySPEDAS mms_part_getspec …"
+trange = ["2015-10-16/13:06:00", "2015-10-16/13:06:10"]
 tnames = mms_part_getspec(
-    trange = ["2015-10-16/13:06:00", "2015-10-16/13:06:10"],
+    trange = trange,
     data_rate = "brst", species = "i",
     output = ["moments", "theta", "energy"],
     prefix = "pre_"
@@ -50,8 +52,19 @@ names = [
 ]
 ref = Dict(name => Array(get_data(suffix * name)) for name in names)
 
+
 # ── 3. Extract cleaned distribution data per timestep ───────────────────────
 data_in = py_get_data(tname)
+
+# Save the data for unit tests
+dis_dist_brst = Dict(
+    "data" => pyconvert(Array, data_in.y),
+    "phi" => pyconvert(Array, data_in.v1),
+    "theta" => pyconvert(Array, data_in.v2),
+    "energy" => pyconvert(Array, data_in.v3),
+)
+
+
 py_times = data_in.times
 times = pyconvert(Vector{Float64}, py_times)
 ntimes = length(times)
@@ -67,7 +80,7 @@ scpot_data = pyconvert(Vector{Float64}, support[2])    # (ntimes,)
 
 dists_jl = Vector{Dict{String, Any}}(undef, ntimes)
 
-btime = 0.
+btime = 0.0
 
 for i in 1:ntimes
     print("\r  extracting distribution $i / $ntimes")
@@ -87,16 +100,13 @@ for i in 1:ntimes
     btime += (@b spd_pgs_moments(clean, sc_pot = scpot_data[i])).time
 
     dists_jl[i] = Dict{String, Any}(
-        "data" => pyconvert(Matrix{Float64}, clean["data"]),
-        "energy" => pyconvert(Matrix{Float64}, clean["energy"]),
-        "denergy" => pyconvert(Matrix{Float64}, clean["denergy"]),
-        "theta" => pyconvert(Matrix{Float64}, clean["theta"]),
-        "dtheta" => pyconvert(Matrix{Float64}, clean["dtheta"]),
-        "phi" => pyconvert(Matrix{Float64}, clean["phi"]),
-        "dphi" => pyconvert(Matrix{Float64}, clean["dphi"]),
-        "bins" => pyconvert(Matrix{Float64}, clean["bins"]),
-        "mass" => pyconvert(Float64, clean["mass"]),
-        "charge" => pyconvert(Float64, clean["charge"]),
+        "data" => pyconvert(Matrix, clean["data"]),
+        "energy" => pyconvert(Matrix, clean["energy"]),
+        "denergy" => pyconvert(Matrix, clean["denergy"]),
+        "theta" => pyconvert(Matrix, clean["theta"]),
+        "dtheta" => pyconvert(Matrix, clean["dtheta"]),
+        "phi" => pyconvert(Matrix, clean["phi"]),
+        "dphi" => pyconvert(Matrix, clean["dphi"]),
     )
 end
 @info "Total time: $(btime) s"
@@ -109,6 +119,7 @@ outfile = joinpath(outdir, "pyspedas_mms_fpi_brst_i.jld2")
 
 result = Dict{String, Any}(
     "ref" => ref,
+    "dis_dist_brst" => dis_dist_brst,
     "distributions" => dists_jl,
     "mag_data" => mag_data,
     "scpot_data" => scpot_data,
@@ -117,3 +128,17 @@ result = Dict{String, Any}(
 
 jldsave(outfile; result)
 println("Saved reference data to $outfile ($(filesize(outfile) ÷ 1024) KB)")
+
+
+## Benchmarking
+@b for i in 1:ntimes
+    dists_py = mms_get_fpi_dist(
+        tname; index = i - 1,
+        species = "i", probe = "1", data_rate = "brst"
+    )
+    dist_dict = dists_py[0]
+    # orig_energy is needed by clean_data
+    dist_dict["orig_energy"] = dist_dict["energy"][pybuiltins.slice(pybuiltins.None), 0, 0]
+    eflux_data = mms_convert_flux_units(dist_dict; units = "eflux")
+    mms_pgs_clean_data(eflux_data)
+end

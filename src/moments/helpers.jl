@@ -1,3 +1,15 @@
+# Build a CartesianIndex inserting `ie` at position `edim` among the other indices `J`.
+# e.g. _fullindex(3, 2, CartesianIndex(5,7)) → CartesianIndex(5,3,7)
+@inline function _fullindex(ie, edim, TJ::NTuple{N, Int}) where {N}
+    tuple = ntuple(i -> i < edim ? TJ[i] : i == edim ? ie : TJ[i - 1], N + 1)
+    return CartesianIndex(tuple)
+end
+
+_scalar(x, i) = x isa Number ? x : x[i]
+_vector(::Nothing, i) = nothing
+_vector(x::AbstractVector, i) = x
+_vector(x::AbstractMatrix, i) = selectdim(x, 1, i)
+
 # Rotation matrix with z' along `v1`, y' along `v1 × v2`, x' completing the triad.
 # Matches SPEDAS `rot_mat`.
 function _rot_mat(v1, v2)
@@ -49,17 +61,20 @@ function _compute_denergy!(dE, energy)
 end
 
 # Compute bin widths from bin centers using centered finite differences.
-function _bin_widths!(dx, x)
+# When `period` is given (e.g. 360 for azimuthal angles), differences that
+# exceed half the period are treated as circular wraps.
+function _bin_widths!(dx, x, period = nothing)
     @assert length(x) > 1
     n = length(x)
-    dx[1] = x[2] - x[1]
+
+    _cdiff(a, b) = (d = abs(a - b); !isnothing(period) && d > period / 2 ? period - d : d)
+
+    dx[1] = _cdiff(x[2], x[1])
     @inbounds for i in 2:(n - 1)
-        dx[i] = (x[i + 1] - x[i - 1]) / 2
+        dx[i] = (_cdiff(x[i + 1], x[i]) + _cdiff(x[i], x[i - 1])) / 2
     end
-    dx[n] = x[n] - x[n - 1]
+    dx[n] = _cdiff(x[n], x[n - 1])
     return dx
 end
 
-function _bin_widths(x)
-    _bin_widths!(similar(x), x)
-end
+_bin_widths(x, period = nothing) = _bin_widths!(similar(x), x, period)

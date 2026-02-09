@@ -16,5 +16,4 @@ _dict2nt(dist) = (
     data = dist["data"], energy = unique(dist["energy"]),
     theta = _angle(dist["theta"]), phi = _angle(dist["phi"]),
     dtheta = _angle(dist["dtheta"]), dphi = _angle(dist["dphi"]),
-    bins = dist["bins"], mass = dist["mass"], charge = dist["charge"],
 )
