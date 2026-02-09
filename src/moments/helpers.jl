@@ -47,3 +47,19 @@ function _compute_denergy!(dE, energy)
     end
     return dE
 end
+
+# Compute bin widths from bin centers using centered finite differences.
+function _bin_widths!(dx, x)
+    @assert length(x) > 1
+    n = length(x)
+    dx[1] = x[2] - x[1]
+    @inbounds for i in 2:(n - 1)
+        dx[i] = (x[i + 1] - x[i - 1]) / 2
+    end
+    dx[n] = x[n] - x[n - 1]
+    return dx
+end
+
+function _bin_widths(x)
+    _bin_widths!(similar(x), x)
+end

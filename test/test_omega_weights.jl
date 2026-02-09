@@ -1,4 +1,9 @@
-using VelocityDistributionFunctions: omega_weights
+using Test
+using VelocityDistributionFunctions: _domega, omega_weights, omega_weightsd
+
+@testset "_domega" begin
+    @test _domega(0, pi, 2pi) ≈ 4π atol = 1.0e-12
+end
 
 @testset "omega_weights" begin
     @testset "full-sphere solid angle" begin
@@ -8,8 +13,8 @@ using VelocityDistributionFunctions: omega_weights
         dtheta = fill(180.0, 1, 1)
         dphi = fill(360.0, 1, 1)
 
-        ω = omega_weights(theta, phi, dtheta, dphi)
-        @test ω[1, 1, 1] ≈ 4π atol = 1.0e-12
+        ω = omega_weightsd.(theta, phi, dtheta, dphi)
+        @test ω[1, 1][1] ≈ 4π atol = 1.0e-12
     end
 
     @testset "hemisphere solid angle" begin
@@ -19,9 +24,9 @@ using VelocityDistributionFunctions: omega_weights
         dtheta = [90.0 90.0]
         dphi = [360.0 360.0]
 
-        ω = omega_weights(theta, phi, dtheta, dphi)
-        @test ω[1, 1, 1] ≈ 2π atol = 1.0e-12
-        @test ω[1, 1, 2] ≈ 2π atol = 1.0e-12
+        ω = omega_weightsd.(theta, phi, dtheta, dphi)
+        @test ω[1, 1][1] ≈ 2π atol = 1.0e-12
+        @test ω[1, 2][1] ≈ 2π atol = 1.0e-12
     end
 
     @testset "symmetry: uniform phi bins" begin
@@ -32,10 +37,8 @@ using VelocityDistributionFunctions: omega_weights
         dtheta = fill(180.0, 1, n_phi)
         dphi = fill(90.0, 1, n_phi)
 
-        ω = omega_weights(theta, phi, dtheta, dphi)
+        ω = omega_weightsd.(theta, phi, dtheta, dphi)
         # Total solid angle should be 4π
-        @test sum(ω[1, :, :]) ≈ 4π atol = 1.0e-12
-        # Each phi bin should have equal solid angle
-        @test all(≈(ω[1, 1, 1]), ω[1, 1, :])
+        @test sum(getindex.(ω, 1)) ≈ 4π atol = 1.0e-12
     end
 end

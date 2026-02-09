@@ -42,8 +42,8 @@ end
     q = zero(SVector{3, T})
     # Outer loop over angle bins: compute trig once per angle
     @inbounds for J in CartesianIndices(tail(size(tmp2)))
-        sth, cth = sincosd(theta[J])
-        sph, cph = sincosd(phi[J])
+        sth, cth = sincosd(_theta(theta, J))
+        sph, cph = sincosd(_phi(phi, J))
         ehat = SA[cth * cph, cth * sph, sth]
         # Inner loop over energy bins
         for ie in 1:n_energy
