@@ -1,67 +1,64 @@
 """
     generate_pyspedas_reference.jl
 
-Run PySPEDAS's MMS FPI ion burst moments test, extract both the reference moments
-and the cleaned per-timestep distribution data, then serialize everything to
-`test/refdata/pyspedas_mms_fpi_brst_i.jls` so that unit tests can load it
-without touching Python.
+Generate spectra and moments from 3D MMS particle data.
+
+Extract both the reference moments and the cleaned per-timestep distribution data, then serialize it so that unit tests can load it without touching Python.
 
 Usage (from project root):
     julia --project=test test/generate_pyspedas_reference.jl
+
+## References
+
+- [mms_part_getspec](https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/particles/mms_part_getspec.py)
+- [mms_part_products](https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/particles/mms_part_products.py)
+- [mms_get_fpi_dist](https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/fpi_tools/mms_get_fpi_dist.py)
+- [mms_pgs_clean_data](https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/particles/mms_pgs_clean_data.py)
 """
 
 using PySPEDAS
 using PySPEDAS.PythonCall
-using Serialization
+using JLD2
 using Chairmarks
 
-@py import pyspedas.projects.mms.tests.test_mms_part_getspec: PGSTests
 @py import pyspedas.projects.mms.fpi_tools.mms_get_fpi_dist: mms_get_fpi_dist
 @py import pyspedas.projects.mms.particles.mms_convert_flux_units: mms_convert_flux_units
 @py import pyspedas.projects.mms.particles.mms_pgs_clean_data: mms_pgs_clean_data
 @py import pyspedas.projects.mms.particles.mms_pgs_clean_support: mms_pgs_clean_support
 @py import pyspedas.tplot_tools: get_data as py_get_data
-@py import numpy as np
 @py import pyspedas.projects.mms.particles.mms_part_getspec: mms_part_getspec
 @py import pyspedas.particles.moments.spd_pgs_moments: spd_pgs_moments
 
 # ── 1. Run pyspedas to generate reference moments ──────────────────────
-println("Running PySPEDAS mms_part_getspec …")
+@info "Running PySPEDAS mms_part_getspec …"
 tnames = mms_part_getspec(
     trange = ["2015-10-16/13:06:00", "2015-10-16/13:06:10"],
-    data_rate = "brst",
-    species = "i",
-    output = "moments",
+    data_rate = "brst", species = "i",
+    output = ["moments", "theta", "energy"],
     prefix = "pre_"
 )
-println("  done.")
 
 tname = "mms1_dis_dist_brst"
+suffix = "pre_mms1_dis_dist_brst_"
 
 # ── 2. Extract reference moment arrays ──────────────────────────────────────
-ref = Dict{String, Any}()
-for name in [
-        "density", "flux", "velocity", "eflux", "qflux",
-        "mftens", "ptens", "ttens", "avgtemp", "vthermal",
-        "t3", "magt3", "symm", "symm_theta", "symm_phi", "symm_ang",
-    ]
-    tvar = "pre_mms1_dis_dist_brst_$name"
-    d = py_get_data(tvar)
-    if pyconvert(Bool, d == pybuiltins.None)
-        @warn "tplot variable $tvar not found, skipping"
-        continue
-    end
-    ref[name] = pyconvert(Array{Float64}, d.y)
-end
+names = [
+    "density", "flux", "velocity", "eflux", "qflux",
+    "mftens", "ptens", "ttens", "avgtemp", "vthermal",
+    "t3", "magt3", "symm", "symm_theta", "symm_phi", "symm_ang",
+    "energy", "theta",
+]
+ref = Dict(name => Array(get_data(suffix * name)) for name in names)
 
 # ── 3. Extract cleaned distribution data per timestep ───────────────────────
 data_in = py_get_data(tname)
-times = pyconvert(Vector{Float64}, data_in.times)
+py_times = data_in.times
+times = pyconvert(Vector{Float64}, py_times)
 ntimes = length(times)
 println("Number of timesteps: $ntimes")
 
 support = mms_pgs_clean_support(
-    np.array(times);
+    py_times;
     mag_name = "mms1_fgm_b_gse_brst_l2_bvec",
     sc_pot_name = "mms1_edp_scpot_brst_l2"
 )
@@ -85,7 +82,7 @@ for i in 1:ntimes
 
     eflux_data = mms_convert_flux_units(dist_dict; units = "eflux")
     clean = mms_pgs_clean_data(eflux_data)
-    clean["magf"] = support[0][i-1]
+    clean["magf"] = support[0][i - 1]
 
     btime += (@b spd_pgs_moments(clean, sc_pot = scpot_data[i])).time
 
@@ -106,17 +103,17 @@ end
 println("\n  done.")
 
 # ── 4. Save ─────────────────────────────────────────────────────────────────
-outdir = joinpath(@__DIR__, "refdata")
+outdir = joinpath(@__DIR__, "../data")
 mkpath(outdir)
-outfile = joinpath(outdir, "pyspedas_mms_fpi_brst_i.jls")
+outfile = joinpath(outdir, "pyspedas_mms_fpi_brst_i.jld2")
 
 result = Dict{String, Any}(
-    "ref_moments" => ref,
+    "ref" => ref,
     "distributions" => dists_jl,
     "mag_data" => mag_data,
     "scpot_data" => scpot_data,
     "times" => times,
 )
 
-serialize(outfile, result)
+jldsave(outfile; result)
 println("Saved reference data to $outfile ($(filesize(outfile) ÷ 1024) KB)")
