@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Distributions · VelocityDistributionFunctions.jl</title><meta name="title" content="Distributions · VelocityDistributionFunctions.jl"/><meta property="og:title" content="Distributions · VelocityDistributionFunctions.jl"/><meta property="twitter:title" content="Distributions · VelocityDistributionFunctions.jl"/><meta name="description" content="Documentation for VelocityDistributionFunctions.jl."/><meta property="og:description" content="Documentation for VelocityDistributionFunctions.jl."/><meta property="twitter:description" content="Documentation for VelocityDistributionFunctions.jl."/><meta property="og:url" content="https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/distributions/"/><meta property="twitter:url" content="https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/distributions/"/><link rel="canonical" href="https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/distributions/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">VelocityDistributionFunctions.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Distributions</a><ul class="internal"><li><a class="tocitem" href="#Maxwellian-Distribution"><span>Maxwellian Distribution</span></a></li><li><a class="tocitem" href="#BiMaxwellian-Distribution"><span>BiMaxwellian Distribution</span></a></li><li><a class="tocitem" href="#ShiftedPDF"><span>ShiftedPDF</span></a></li></ul></li><li><a class="tocitem" href="../kappa/">Kappa</a></li><li><a class="tocitem" href="../moment_note/">Math notes for moment calculations</a></li><li><a class="tocitem" href="../moment_validation/">Moment validation</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Distributions</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Distributions</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/blob/main/docs/src/distributions.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Velocity-Distribution-Functions"><a class="docs-heading-anchor" href="#Velocity-Distribution-Functions">Velocity Distribution Functions</a><a id="Velocity-Distribution-Functions-1"></a><a class="docs-heading-anchor-permalink" href="#Velocity-Distribution-Functions" title="Permalink"></a></h1><p>This package provides implementations of common velocity distribution functions used in plasma physics.</p><article><details class="docstring" open="true"><summary id="VelocityDistributionFunctions.Maxwellian-distributions"><a class="docstring-binding" href="#VelocityDistributionFunctions.Maxwellian-distributions"><code>VelocityDistributionFunctions.Maxwellian</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">Maxwellian(args...; u0=nothing, kw...)
+Maxwellian(n, args...; u0=nothing, kw...)</code></pre><p>Construct a <a href="../#VelocityDistributionFunctions.MaxwellianPDF"><code>MaxwellianPDF</code></a> velocity distribution.</p><p>If <code>n</code> is provided, returns <a href="../#VelocityDistributionFunctions.VelocityDistribution"><code>VelocityDistribution</code></a> with <code>n</code> and the distribution <code>MaxwellianPDF(args...; kw...)</code>. If <code>u0</code> is provided, returns <a href="#ShiftedPDF"><code>ShiftedPDF</code></a> with the distribution <code>MaxwellianPDF(args...; kw...)</code> and <code>u0</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/blob/130911ad409f33bfd3c6b5c93b03049133018780/src/distributions/Distributions.jl#L41-L49">source</a></section></details></article><article><details class="docstring" open="true"><summary id="VelocityDistributionFunctions.BiMaxwellian-distributions"><a class="docstring-binding" href="#VelocityDistributionFunctions.BiMaxwellian-distributions"><code>VelocityDistributionFunctions.BiMaxwellian</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">BiMaxwellian(args...; u0=nothing, kw...)
+BiMaxwellian(n, args...; u0=nothing, kw...)</code></pre><p>Construct a <a href="../#VelocityDistributionFunctions.BiMaxwellianPDF"><code>BiMaxwellianPDF</code></a> velocity distribution.</p><p>If <code>n</code> is provided, returns <a href="../#VelocityDistributionFunctions.VelocityDistribution"><code>VelocityDistribution</code></a> with <code>n</code> and the distribution <code>BiMaxwellianPDF(args...; kw...)</code>. If <code>u0</code> is provided, returns <a href="#ShiftedPDF"><code>ShiftedPDF</code></a> with the distribution <code>BiMaxwellianPDF(args...; kw...)</code> and <code>u0</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/blob/130911ad409f33bfd3c6b5c93b03049133018780/src/distributions/Distributions.jl#L41-L49">source</a></section></details></article><p>For Kappa distribution, see <a href="../kappa/">Kappa</a>.</p><h2 id="Maxwellian-Distribution"><a class="docs-heading-anchor" href="#Maxwellian-Distribution">Maxwellian Distribution</a><a id="Maxwellian-Distribution-1"></a><a class="docs-heading-anchor-permalink" href="#Maxwellian-Distribution" title="Permalink"></a></h2><p>The isotropic Maxwellian distribution is the most basic equilibrium distribution:</p><pre><code class="language-julia hljs">using VelocityDistributionFunctions
+
+v_th = 1.0 # Thermal velocity
+u0 = [0.5, 0.0, 0.0] # Drift velocity
+vdf = Maxwellian(v_th; u0)
+
+# Sample from the distribution
+samples = rand(vdf, 10000)
+
+# Evaluate Theoretical PDF
+𝐯 = [1.0, 0.0, 0.0]
+vdf(𝐯)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.13986259134061976</code></pre><p>Unit is also supported</p><pre><code class="language-julia hljs">using Unitful
+
+T = 30000u&quot;K&quot; # Temperature
+vdf = Maxwellian(T)
+
+𝐯 = ones(3) .* 1u&quot;m/s&quot;
+@assert vdf(𝐯) ≈ 2.070889302986066e-19 * 1u&quot;s^3/m^3&quot;
+
+# If the density is given, it will return a VelocityDistribution instead of a PDF
+n = 1u&quot;m^-3&quot;
+p = n * Unitful.k * T
+vdf = Maxwellian(n, p)
+vdf(𝐯)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2.070889302986066e-19 s^3 m^-6</code></pre><p>Strip units from a distribution using <code>ustrip</code>.</p><pre><code class="language-julia hljs">vdf_unitless = ustrip(vdf)
+vdf_unitless(ustrip(𝐯))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2.070889302986066e-19</code></pre><h3 id="Visualization"><a class="docs-heading-anchor" href="#Visualization">Visualization</a><a id="Visualization-1"></a><a class="docs-heading-anchor-permalink" href="#Visualization" title="Permalink"></a></h3><p>The following examples demonstrate sampling from distributions and comparing with theoretical PDFs using Makie.</p><pre><code class="language-julia hljs">using CairoMakie
+using LinearAlgebra: norm
+using VelocityDistributionFunctions: V
+
+# Create Maxwellian distribution
+vdf = Maxwellian(1.0)
+
+# Generate samples
+n_samples = 100000
+vs = rand(vdf, n_samples)
+speeds = norm.(vs)
+
+# Theoretical speed distribution: f(v) = 4π v² f₃D(v)
+# where f₃D is the 3D Maxwellian
+v_range = range(0, 4, length=200)
+speed_pdf = vdf.(V.(v_range)) # using V constructor to denote speed
+
+# Plot
+let fig = Figure()
+    ax = Axis(fig[1, 1],
+        xlabel=&quot;Speed&quot;,
+        ylabel=&quot;Probability Density&quot;,
+        title=&quot;Maxwellian Speed Distribution&quot;)
+
+    hist!(ax, speeds, bins=100, normalization=:pdf, label=&quot;Samples&quot;)
+    lines!(ax, v_range, speed_pdf, color=:red, linewidth=2, label=&quot;Theory&quot;)
+    axislegend(ax, position=:rt)
+    fig
+end</code></pre><img src="699eb5bb.png" alt="Example block output"/><h2 id="BiMaxwellian-Distribution"><a class="docs-heading-anchor" href="#BiMaxwellian-Distribution">BiMaxwellian Distribution</a><a id="BiMaxwellian-Distribution-1"></a><a class="docs-heading-anchor-permalink" href="#BiMaxwellian-Distribution" title="Permalink"></a></h2><p>The BiMaxwellian distribution has different thermal velocities parallel and perpendicular to a magnetic field:</p><pre><code class="language-julia hljs">vdf = BiMaxwellian(0.5, 2.0)
+
+vs = rand(vdf, 10000)
+v_pars = getindex.(vs, 3)
+v_perps = [sqrt(v[1]^2 + v[2]^2) for v in vs]
+
+v_range = range(-4, 4, length=200)
+v_par_pdf = vdf.(VPar.(v_range))
+v_perp_range = range(0, 4, length=200)
+v_perp_pdf = vdf.(VPerp.(v_perp_range))
+
+let fig = Figure()
+    ax = Axis(fig[1, 1], xlabel=L&quot;v_\parallel&quot;, ylabel=&quot;Probability Density&quot;, title=&quot;Bi-Maxwellian Parallel&quot;)
+
+    hist!(ax, v_pars, bins=100, normalization=:pdf, label=&quot;Samples&quot;)
+    lines!(ax, v_range, v_par_pdf, color=:red, linewidth=2, label=&quot;Theory&quot;)
+
+    ax2 = Axis(fig[1, 2], xlabel=L&quot;|\mathbf{v}_\perp|&quot;, title=&quot;Bi-Maxwellian Perpendicular&quot;)
+    hist!(ax2, v_perps, bins=100, normalization=:pdf, label=&quot;Samples&quot;)
+    lines!(ax2, v_perp_range, v_perp_pdf, color=:red, linewidth=2, label=&quot;Theory&quot;)
+    axislegend(ax2, position=:rt)
+    fig
+end</code></pre><img src="2c917108.png" alt="Example block output"/><h2 id="ShiftedPDF"><a class="docs-heading-anchor" href="#ShiftedPDF">ShiftedPDF</a><a id="ShiftedPDF-1"></a><a class="docs-heading-anchor-permalink" href="#ShiftedPDF" title="Permalink"></a></h2><p>Any velocity PDF can be drifted by wrapping it in <a href="#ShiftedPDF"><code>ShiftedPDF</code></a>.</p><pre><code class="language-julia hljs">base = MaxwellianPDF(v_th)
+u0 = [0.5, 0.0, 0.0]
+vdf = ShiftedPDF(base, u0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ShiftedPDF{Float64, MaxwellianPDF{Float64}, Vector{Float64}}(
+base: MaxwellianPDF{Float64}(vth=1.0)
+u0: [0.5, 0.0, 0.0]
+)
+</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../kappa/">Kappa »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Wednesday 11 February 2026 21:01">Wednesday 11 February 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
