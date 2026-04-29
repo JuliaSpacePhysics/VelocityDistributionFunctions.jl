@@ -44,6 +44,7 @@ end
 # TODO: support multiple dimensions
 Random.rand(d::AbstractVelocityPDF, dim::Int) = [rand(d) for _ in 1:dim]
 Random.rand(rng::AbstractRNG, X::VelocityDistribution, dims::Dims) = rand(rng, X.pdf, dims)
+Random.rand(rng::AbstractRNG, d::VelocityDistribution) = rand(rng, d.pdf)
 Random.rand(d::VelocityDistribution, args::Integer...) = rand(d.pdf, args...)
 
 # ---

@@ -133,6 +133,21 @@ end
     end
 end
 
+@testset "Physical Distribution Sampling with RNG" begin
+    rng = Random.default_rng()
+    d = Maxwellian(1.0, 2.0) # returns VelocityDistribution
+    v = rand(rng, d)
+    @test length(v) == 3
+    @test all(isfinite, v)
+    
+    # Test reproducibility and correctness against underlying pdf
+    rng1 = Random.MersenneTwister(123)
+    v1 = rand(rng1, d)
+    rng2 = Random.MersenneTwister(123)
+    v2 = rand(rng2, d.pdf)
+    @test v1 == v2
+end
+
 
 @testset "Kappa Distribution" begin
     @testset "Construction" begin
