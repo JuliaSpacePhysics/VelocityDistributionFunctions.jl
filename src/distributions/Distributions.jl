@@ -1,6 +1,6 @@
 using Random
-using Distributions
-using Distributions: MultivariateDistribution, @check_args
+import Distributions
+using Distributions: MultivariateDistribution, Continuous, Chisq, @check_args
 import Distributions: pdf
 using LinearAlgebra: normalize, dot
 using SpecialFunctions: gamma

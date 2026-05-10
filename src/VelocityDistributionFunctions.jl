@@ -3,7 +3,7 @@ module VelocityDistributionFunctions
 using Tullio: @tullio
 using Bumper: @alloc, @no_escape
 using LinearAlgebra
-using StaticArrays
+using StaticArrays: SVector, SMatrix, MVector, SA, @SMatrix
 using MuladdMacro: @muladd
 using Base: tail
 using StructArrays: StructArray
