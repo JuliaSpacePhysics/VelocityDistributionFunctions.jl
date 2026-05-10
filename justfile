@@ -3,4 +3,6 @@ default:
 
 perf:
     #!/usr/bin/env -S julia --threads=auto --project=. --startup-file=no
-    @time Base.@time_imports using VelocityDistributionFunctions
+    using TOML
+    project_name = Symbol(TOML.parsefile(Base.active_project())["name"])
+    @time Base.@time_imports @eval using $project_name
