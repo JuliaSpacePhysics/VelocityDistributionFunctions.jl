@@ -48,8 +48,6 @@ for (f, g) in [(:Maxwellian, :MaxwellianPDF), (:BiMaxwellian, :BiMaxwellianPDF),
     end
 end
 
-include("VDFsUnitfulExt.jl")
-
 function Distributions.pdf(vdf::Union{MaxwellianPDF, KappaPDF}, v::V)
     v² = v.val^2
     return 4π * v² * _pdf_v²(vdf, v²)

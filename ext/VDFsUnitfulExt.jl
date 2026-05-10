@@ -1,11 +1,20 @@
+module VDFsUnitfulExt
+
+using VelocityDistributionFunctions
+using VelocityDistributionFunctions: AbstractVelocityPDF, VelocityDistribution
+using VelocityDistributionFunctions: MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF
+using VelocityDistributionFunctions: kappa_thermal_speed, _pdf
+import Distributions
 using Unitful: upreferred, @derived_dimension
 using Unitful: Quantity, Temperature, Velocity, Pressure
 using Unitful: me, k
 import Unitful: ustrip
 using ConstructionBase: constructorof, getfields
 using Unitful: 𝐋
+
 @derived_dimension NumberDensity 𝐋^-3
 const NType = Union{NumberDensity, Real}
+
 v_th(T, m) = upreferred(sqrt(2 * k * T / m))
 
 const vth_kappa_ = kappa_thermal_speed
@@ -46,4 +55,6 @@ end
 for f in (:BiMaxwellian, :BiKappa)
     @eval $f(n::NumberDensity, p_perp::Pressure, p_para::Pressure, args...; kw...) =
         VelocityDistribution(n, $f(p_perp / (n * k), p_para / (n * k), args...; kw...))
+end
+
 end

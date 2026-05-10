@@ -19,7 +19,12 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
+
+[weakdeps]
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[extensions]
+VDFsUnitfulExt = "Unitful"
 
 [compat]
 BaseType = "0.2.0"
