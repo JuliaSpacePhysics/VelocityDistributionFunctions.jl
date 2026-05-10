@@ -4,7 +4,7 @@ version = "0.2.1"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
-projects = ["test", "docs"]
+projects = ["test", "docs", "benchmark"]
 
 [deps]
 BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
