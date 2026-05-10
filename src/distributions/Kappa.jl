@@ -33,17 +33,18 @@ struct KappaPDF{T, K <: Real} <: KappaDistribution{T, K}
 end
 
 """
-    kappa_thermal_speed(T, κ, m)
+    kappa_thermal_speed(vth, κ)
+    kappa_thermal_speed(T::Temperature, κ, m)  # requires Unitful
 
-Return the most probable speed of a (modified) kappa distribution with κ-Independent temperature `T`.
+Return the most probable speed of a (modified) kappa distribution.
+
+The second form (accepting `Temperature`) is available when `Unitful` is loaded.
 
 ```math
-V_{th} = \\sqrt{\\frac{κ - 3/2}{κ} \\frac{2 k_B T}{m}}
+V_{th,κ} = v_{th} \\sqrt{\\frac{κ - 3/2}{κ}}
 ```
 """
-function kappa_thermal_speed(T, κ, m)
-    return upreferred(sqrt(2 * k * T / m)) * sqrt((κ - 3 / 2) / κ)
-end
+kappa_thermal_speed(vth, κ) = vth * sqrt((κ - 3/2) / κ)
 
 
 _Aκ(κ, vth) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / vth^3

@@ -2,8 +2,10 @@ module VDFsUnitfulExt
 
 using VelocityDistributionFunctions
 using VelocityDistributionFunctions: AbstractVelocityPDF, VelocityDistribution
-using VelocityDistributionFunctions: MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF
-using VelocityDistributionFunctions: kappa_thermal_speed, _pdf
+using VelocityDistributionFunctions: _pdf
+import VelocityDistributionFunctions: MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF
+import VelocityDistributionFunctions: Maxwellian, BiMaxwellian, Kappa, BiKappa
+import VelocityDistributionFunctions: kappa_thermal_speed
 import Distributions
 using Unitful: upreferred, @derived_dimension
 using Unitful: Quantity, Temperature, Velocity, Pressure
@@ -17,7 +19,7 @@ const NType = Union{NumberDensity, Real}
 
 v_th(T, m) = upreferred(sqrt(2 * k * T / m))
 
-const vth_kappa_ = kappa_thermal_speed
+kappa_thermal_speed(T::Temperature, κ, m) = kappa_thermal_speed(v_th(T, m), κ)
 
 """
     ustrip(d::VelocityDistribution)
@@ -37,10 +39,10 @@ BiMaxwellianPDF(T_perp::Temperature, T_para::Temperature, args...; mass = me, kw
     BiMaxwellianPDF(v_th(T_perp, mass), v_th(T_para, mass), args...; kw...)
 
 KappaPDF(T_perp::Temperature, κ; mass = me, kw...) =
-    KappaPDF(vth_kappa_(T_perp, κ, mass), κ; kw...)
+    KappaPDF(kappa_thermal_speed(T_perp, κ, mass), κ; kw...)
 
 BiKappaPDF(T_perp::Temperature, T_para::Temperature, κ, args...; mass = me, kw...) =
-    BiKappaPDF(vth_kappa_(T_perp, κ, mass), vth_kappa_(T_para, κ, mass), κ, args...; kw...)
+    BiKappaPDF(kappa_thermal_speed(T_perp, κ, mass), kappa_thermal_speed(T_para, κ, mass), κ, args...; kw...)
 
 Distributions.pdf(d::AbstractVelocityPDF, v::AbstractVector{<:Velocity}) = _pdf(d, v)
 
