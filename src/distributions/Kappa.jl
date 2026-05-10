@@ -84,7 +84,7 @@ into a Maxwellian with a Chi-squared distributed temperature variance).
 function _rand!(rng::AbstractRNG, d::KappaPDF, x)
     # Derived from matching power laws: -(κ+1) == -(ν+3)/2
     ν = 2 * d.κ - 1 # degrees of freedom (ν)
-    ξ = rand(rng, Chisq(ν))
+    ξ = _rand_chi2(rng, ν)
     Z = randn(rng, 3)
     scale = d.vth * sqrt(d.κ / ξ) # variance scaling factor
     return x .= scale .* Z

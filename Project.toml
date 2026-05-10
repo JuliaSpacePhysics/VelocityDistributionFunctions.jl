@@ -10,7 +10,6 @@ projects = ["test", "docs", "benchmark"]
 BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MuladdMacro = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
 OhMyThreads = "67456a42-1dca-4109-a031-0a68de7e3ad5"
@@ -21,9 +20,11 @@ StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 
 [weakdeps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [extensions]
+VDFsDistributionsExt = "Distributions"
 VDFsUnitfulExt = "Unitful"
 
 [compat]

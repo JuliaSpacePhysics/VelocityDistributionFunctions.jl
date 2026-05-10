@@ -6,7 +6,6 @@ using VelocityDistributionFunctions: _pdf
 import VelocityDistributionFunctions: MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF
 import VelocityDistributionFunctions: Maxwellian, BiMaxwellian, Kappa, BiKappa
 import VelocityDistributionFunctions: kappa_thermal_speed
-import Distributions
 using Unitful: upreferred, @derived_dimension
 using Unitful: Quantity, Temperature, Velocity, Pressure
 using Unitful: me, k
@@ -44,7 +43,8 @@ KappaPDF(T_perp::Temperature, κ; mass = me, kw...) =
 BiKappaPDF(T_perp::Temperature, T_para::Temperature, κ, args...; mass = me, kw...) =
     BiKappaPDF(kappa_thermal_speed(T_perp, κ, mass), kappa_thermal_speed(T_para, κ, mass), κ, args...; kw...)
 
-Distributions.pdf(d::AbstractVelocityPDF, v::AbstractVector{<:Velocity}) = _pdf(d, v)
+import VelocityDistributionFunctions: pdf
+pdf(d::AbstractVelocityPDF, v::AbstractVector{<:Velocity}) = _pdf(d, v)
 
 for f in (:Maxwellian, :BiMaxwellian, :Kappa, :BiKappa)
     @eval $f(n::NType, T::Temperature, args...; kw...) = VelocityDistribution(n, $f(T, args...; kw...))
