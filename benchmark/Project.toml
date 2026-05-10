@@ -1,4 +1,5 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 VelocityDistributionFunctions = "63a0b508-f74a-48f7-b6e7-0e65849b0078"
