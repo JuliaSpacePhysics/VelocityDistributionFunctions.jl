@@ -1,12 +1,29 @@
 using Random
-using Distributions
-using Distributions: MultivariateDistribution, @check_args
-import Distributions: pdf
 using LinearAlgebra: normalize, dot
 using SpecialFunctions: gamma
 using BaseType: base_numeric_type
 
 import Random: rand
+
+"""
+    pdf(d, 𝐯)
+
+Evaluate the probability density function of distribution `d` at velocity `𝐯`.
+"""
+function pdf end
+
+macro check_args(D, args...)
+    checks = map(args) do arg
+        var, cond = arg.args
+        msg = "$(D): the condition $(cond) is not satisfied."
+        :($(cond) || throw(DomainError($(var), $msg)))
+    end
+    return esc(quote
+        if check_args
+            $(checks...)
+        end
+    end)
+end
 
 # Speed
 struct V{T}
@@ -48,12 +65,12 @@ for (f, g) in [(:Maxwellian, :MaxwellianPDF), (:BiMaxwellian, :BiMaxwellianPDF),
     end
 end
 
-function Distributions.pdf(vdf::Union{MaxwellianPDF, KappaPDF}, v::V)
+function pdf(vdf::Union{MaxwellianPDF, KappaPDF}, v::V)
     v² = v.val^2
     return 4π * v² * _pdf_v²(vdf, v²)
 end
 
-function Distributions.pdf(d::ShiftedPDF, v::VPar)
+function pdf(d::ShiftedPDF, v::VPar)
     upar = d.u0 ⋅ d.base.b0
     return pdf(d.base, VPar(v.val - upar))
 end

@@ -55,10 +55,10 @@ Normalized PDF for the parallel velocity
 f(v) = 1 / (√π vₜₕ) · exp[-(v/vₜₕ)²]
 ```
 """
-function Distributions.pdf(d::BiMaxwellianPDF, v::VPar)
+function pdf(d::BiMaxwellianPDF, v::VPar)
     return exp(-((v.val) / d.vth_para)^2) / √π / d.vth_para
 end
 
-function Distributions.pdf(d::BiMaxwellianPDF, v::VPerp)
+function pdf(d::BiMaxwellianPDF, v::VPerp)
     return exp(-((v.val) / d.vth_perp)^2) * 2 * v.val / d.vth_perp^2
 end

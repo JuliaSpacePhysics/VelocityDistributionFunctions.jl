@@ -1,9 +1,10 @@
 """
-Abstract type for velocity probability distribution functions, extending MultivariateDistribution.
+Abstract type for velocity probability distribution functions.
 """
-abstract type AbstractVelocityPDF{T} <: MultivariateDistribution{Distributions.Continuous} end
+abstract type AbstractVelocityPDF{T} end
 
 (d::AbstractVelocityPDF)(𝐯) = pdf(d, 𝐯)
+pdf(d::AbstractVelocityPDF, 𝐯) = _pdf(d, 𝐯)
 Base.eltype(::Type{<:AbstractVelocityPDF{T}}) where {T} = T
 Base.broadcastable(x::AbstractVelocityPDF) = Ref(x)
 
@@ -47,9 +48,4 @@ Random.rand(rng::AbstractRNG, X::VelocityDistribution, dims::Dims) = rand(rng, X
 Random.rand(rng::AbstractRNG, d::VelocityDistribution) = rand(rng, d.pdf)
 Random.rand(d::VelocityDistribution, args::Integer...) = rand(d.pdf, args...)
 
-# ---
-# Distributions interface
 Base.length(::AbstractVelocityPDF) = 3
-# Handle method ambiguity (`Distributions` assume Real type output)
-Distributions._rand!(rng::AbstractRNG, d::AbstractVelocityPDF, x::AbstractVector{<:Real}) = _rand!(rng, d, x)
-Distributions.pdf(d::AbstractVelocityPDF, 𝐯::AbstractVector{<:Real}) = _pdf(d, 𝐯)

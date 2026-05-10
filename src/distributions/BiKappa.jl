@@ -57,7 +57,7 @@ function _rand!(rng::AbstractRNG, d::BiKappaPDF{T}, x) where {T}
     bperp2 = d.b0 × bperp1
 
     ν = 2 * d.κ - 1
-    ξ = rand(rng, Chisq(ν))
+    ξ = _rand_chi2(rng, ν)
     scale = sqrt(d.κ / ξ)
 
     vpara = d.vth_para * scale * randn(rng)
