@@ -32,13 +32,31 @@ tmoments(data, theta, phi, energy; species=:H, tdim=1, edim=4)
     # After removing tdim, edim shifts down by 1 if it was after tdim
     edim_slice = edim > tdim ? edim - 1 : edim
 
-    result = tmap(1:nt) do i
+    compute(i) = begin
         efluxi = selectdim(data, tdim, i)
         disti = (; data = efluxi, theta = _vector(theta, i), phi = _vector(phi, i), energy = _vector(energy, i))
-        plasma_moments(
-            disti, _scalar(sc_pot, i), _vector(magf, i);
-            edim = edim_slice, kw...
-        )
+        plasma_moments(disti, _scalar(sc_pot, i), _vector(magf, i); edim = edim_slice, kw...)
+    end
+    # Chunk into nthreads groups so each thread infers its own result type,
+    # avoiding a sequential warm-up call on the main thread.
+    nchunks = min(nt, Threads.nthreads())
+    chunk_tasks = map(Iterators.partition(1:nt, cld(nt, nchunks))) do chunk
+        Threads.@spawn begin
+            fst = compute(first(chunk))
+            buf = Vector{typeof(fst)}(undef, length(chunk))
+            buf[1] = fst
+            for (j, i) in enumerate(chunk)
+                j == 1 && continue
+                buf[j] = compute(i)
+            end
+            buf
+        end
+    end
+    all_chunks = fetch.(chunk_tasks)
+    result = Vector{typeof(all_chunks[1][1])}(undef, nt)
+    k = 0
+    for buf in all_chunks
+        for r in buf; result[k += 1] = r; end
     end
     return StructArray(result)
 end

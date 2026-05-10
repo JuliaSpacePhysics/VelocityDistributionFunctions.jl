@@ -10,7 +10,7 @@ returning a `StructArray`.
 function tmoments(dists::AbstractVector, sc_pots; kw...)
     structT = Base.return_types(plasma_moments, Tuple{eltype(dists), eltype(sc_pots), Nothing})[1]
     result = StructArray{structT}(undef, length(dists))
-    tforeach(eachindex(dists, sc_pots)) do i
+    Threads.@threads for i in eachindex(dists, sc_pots)
         result[i] = plasma_moments(dists[i], sc_pots[i]; kw...)
     end
     return result
@@ -19,7 +19,7 @@ end
 function tmoments(dists::AbstractVector, sc_pots, magfs; kw...)
     structT = Base.return_types(plasma_moments, Tuple{eltype(dists), eltype(sc_pots), eltype(magfs)})[1]
     result = StructArray{structT}(undef, length(dists))
-    tforeach(eachindex(dists, sc_pots, magfs)) do i
+    Threads.@threads for i in eachindex(dists, sc_pots, magfs)
         result[i] = plasma_moments(dists[i], sc_pots[i], magfs[i]; kw...)
     end
     return result

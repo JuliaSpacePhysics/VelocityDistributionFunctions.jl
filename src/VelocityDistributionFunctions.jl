@@ -7,7 +7,6 @@ using StaticArrays
 using MuladdMacro: @muladd
 using Base: tail
 using StructArrays: StructArray
-using OhMyThreads: tforeach, tmap
 
 include("utils.jl")
 include("unit_conversion.jl")
