@@ -44,7 +44,7 @@ The second form (accepting `Temperature`) is available when `Unitful` is loaded.
 V_{th,κ} = v_{th} \\sqrt{\\frac{κ - 3/2}{κ}}
 ```
 """
-kappa_thermal_speed(vth, κ) = vth * sqrt((κ - 3/2) / κ)
+kappa_thermal_speed(vth, κ) = vth * sqrt((κ - 3 / 2) / κ)
 
 
 _Aκ(κ, vth) = gamma(κ + 1) / gamma(κ - 1 / 2) / √((π * κ)^3) / vth^3
@@ -84,7 +84,7 @@ into a Maxwellian with a Chi-squared distributed temperature variance).
 function _rand!(rng::AbstractRNG, d::KappaPDF, x)
     # Derived from matching power laws: -(κ+1) == -(ν+3)/2
     ν = 2 * d.κ - 1 # degrees of freedom (ν)
-    ξ = rand(rng, Chisq(ν))
+    ξ = _rand_chisq(rng, ν)
     Z = randn(rng, 3)
     scale = d.vth * sqrt(d.κ / ξ) # variance scaling factor
     return x .= scale .* Z

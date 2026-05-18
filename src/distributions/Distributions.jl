@@ -1,12 +1,16 @@
 using Random
-import Distributions
-using Distributions: MultivariateDistribution, Continuous, Chisq, @check_args
-import Distributions: pdf
 using LinearAlgebra: normalize, dot
 using SpecialFunctions: gamma
 using BaseType: base_numeric_type
 
 import Random: rand
+
+"""
+    pdf(d, v)
+
+Probability density of distribution `d` at velocity `v`.
+"""
+function pdf end
 
 # Speed
 struct V{T}
@@ -19,6 +23,7 @@ struct VPerp{T}
     val::T
 end
 
+include("utils.jl")
 include("types.jl")
 include("ShiftedPDF.jl")
 include("Maxwellian.jl")
@@ -48,12 +53,12 @@ for (f, g) in [(:Maxwellian, :MaxwellianPDF), (:BiMaxwellian, :BiMaxwellianPDF),
     end
 end
 
-function Distributions.pdf(vdf::Union{MaxwellianPDF, KappaPDF}, v::V)
+function pdf(vdf::Union{MaxwellianPDF, KappaPDF}, v::V)
     v² = v.val^2
     return 4π * v² * _pdf_v²(vdf, v²)
 end
 
-function Distributions.pdf(d::ShiftedPDF, v::VPar)
+function pdf(d::ShiftedPDF, v::VPar)
     upar = d.u0 ⋅ d.base.b0
     return pdf(d.base, VPar(v.val - upar))
 end

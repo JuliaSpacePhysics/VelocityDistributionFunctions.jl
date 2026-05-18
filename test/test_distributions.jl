@@ -1,9 +1,10 @@
 using VelocityDistributionFunctions
-import VelocityDistributionFunctions: _pdf_1d, V, ShiftedPDF
+import VelocityDistributionFunctions: _pdf_1d, _rand_chisq, _rand_gamma, V, VPar, ShiftedPDF
 using Test
 using Random
 using LinearAlgebra: norm, dot
 using Statistics: mean, var
+using Distributions: Chisq, Gamma
 using Unitful
 using Unitful: 𝐓, 𝐋, dimension
 
@@ -139,7 +140,7 @@ end
     v = rand(rng, d)
     @test length(v) == 3
     @test all(isfinite, v)
-    
+
     # Test reproducibility and correctness against underlying pdf
     rng1 = Random.MersenneTwister(123)
     v1 = rand(rng1, d)
@@ -148,6 +149,43 @@ end
     @test v1 == v2
 end
 
+
+@testset "_rand_gamma / _rand_chisq vs Distributions.jl" begin
+    # Moment-match our samplers against `Distributions.Gamma` / `Distributions.Chisq`
+    # to confirm we're sampling from the same distribution. Both must agree with
+    # the theoretical moments to within MC noise (50k draws ⇒ ~1% rtol on means).
+    N = 50_000
+    @testset "Gamma(α)" for α in (1.0, 2.5, 7.3)
+        rng1 = Random.MersenneTwister(0)
+        rng2 = Random.MersenneTwister(0)
+        ours = [_rand_gamma(rng1, α) for _ in 1:N]
+        ref = rand(rng2, Gamma(α, 1.0), N)
+        @test mean(ours) ≈ α rtol = 5.0e-2
+        @test var(ours) ≈ α rtol = 1.0e-1
+        @test mean(ours) ≈ mean(ref) rtol = 5.0e-2
+        @test var(ours) ≈ var(ref) rtol = 1.0e-1
+        @test all(>(0), ours)
+    end
+    @testset "Chisq(ν)" for ν in (2.5, 5.0, 11.7)
+        rng1 = Random.MersenneTwister(0)
+        rng2 = Random.MersenneTwister(0)
+        ours = [_rand_chisq(rng1, ν) for _ in 1:N]
+        ref = rand(rng2, Chisq(ν), N)
+        @test mean(ours) ≈ ν rtol = 5.0e-2
+        @test var(ours) ≈ 2ν rtol = 1.0e-1
+        @test mean(ours) ≈ mean(ref) rtol = 5.0e-2
+        @test var(ours) ≈ var(ref) rtol = 1.0e-1
+        @test all(>(0), ours)
+    end
+end
+
+@testset "Distributions.pdf extension" begin
+    # When Distributions is loaded, `Distributions.pdf(d, v)` should dispatch to ours.
+    import Distributions
+    d = Maxwellian(1.0)
+    v = [0.3, -0.1, 0.4]
+    @test Distributions.pdf(d, v) === d(v)
+end
 
 @testset "Kappa Distribution" begin
     @testset "Construction" begin
@@ -172,6 +210,14 @@ end
         p0 = 6.755497421769535e-7u"s/m"
         @test _pdf_1d(vdf, 1u"m/s") ≈ p0
         @test _pdf_1d.(vdf, [0u"m/s", 1u"m/s", 2u"m/s"]) ≈ [p0, p0, p0]
+    end
+
+    @testset "Speed PDF" begin
+        # pdf(::KappaPDF, ::V) wraps _pdf_v² with the 4π v² surface factor.
+        vdf = Kappa(1.0, 4.0)
+        v = 0.7
+        𝐯 = [v, 0.0, 0.0]
+        @test vdf(V(v)) ≈ 4π * v^2 * vdf(𝐯)
     end
 
     @testset "Physical distribution wrapper" begin
