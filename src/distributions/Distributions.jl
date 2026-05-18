@@ -1,6 +1,6 @@
 using Random
 using LinearAlgebra: normalize, dot
-using SpecialFunctions: gamma
+using Gamma: gamma
 using BaseType: base_numeric_type
 
 import Random: rand

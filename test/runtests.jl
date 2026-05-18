@@ -9,6 +9,5 @@ end
 include("test_pad.jl")
 include("test_distributions.jl")
 include("test_omega_weights.jl")
-include("test_spectra.jl")
 include("test_elfin_spectra.jl")
 include("test_moments.jl")

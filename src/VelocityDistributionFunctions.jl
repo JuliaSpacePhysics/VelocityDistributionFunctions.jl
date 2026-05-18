@@ -1,6 +1,5 @@
 module VelocityDistributionFunctions
 
-using Tullio: @tullio
 using Bumper: @alloc, @no_escape
 using LinearAlgebra
 using StaticArrays: SVector, SMatrix, MVector, SA, @SMatrix
