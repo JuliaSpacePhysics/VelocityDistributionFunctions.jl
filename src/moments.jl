@@ -32,15 +32,16 @@ tmoments(data, theta, phi, energy; species=:H, tdim=1, edim=4)
     # After removing tdim, edim shifts down by 1 if it was after tdim
     edim_slice = edim > tdim ? edim - 1 : edim
 
-    result = tmap(1:nt) do i
-        efluxi = selectdim(data, tdim, i)
-        disti = (; data = efluxi, theta = _vector(theta, i), phi = _vector(phi, i), energy = _vector(energy, i))
-        plasma_moments(
-            disti, _scalar(sc_pot, i), _vector(magf, i);
-            edim = edim_slice, kw...
-        )
+    moment_at(i) = let disti = (; data = selectdim(data, tdim, i), theta = _vector(theta, i), phi = _vector(phi, i), energy = _vector(energy, i))
+        plasma_moments(disti, _scalar(sc_pot, i), _vector(magf, i); edim = edim_slice, kw...)
     end
-    return StructArray(result)
+    first_result = moment_at(1)
+    result = StructArray{typeof(first_result)}(undef, nt)
+    result[1] = first_result
+    Threads.@threads :dynamic for i in 2:nt
+        result[i] = moment_at(i)
+    end
+    return result
 end
 
 # ── High-level single-timestep interface ─────────────────────────────────────
