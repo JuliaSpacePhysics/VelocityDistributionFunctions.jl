@@ -1,8 +1,5 @@
 using VelocityDistributionFunctions
 using Documenter
-using DocumenterCitations
-
-const bib = CitationBibliography(joinpath(@__DIR__, "VelocityDistributionFunctions.jl.bib"))
 
 DocMeta.setdocmeta!(VelocityDistributionFunctions, :DocTestSetup, :(using VelocityDistributionFunctions); recursive = true)
 
@@ -17,12 +14,9 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
-        "Distributions" => "distributions.md",
-        "Kappa" => "kappa.md",
         "Math notes for moment calculations" => "moment_note.md",
         "Moment validation" => "moment_validation.md",
     ],
-    plugins = [bib],
 )
 
 deploydocs(;
