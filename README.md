@@ -17,13 +17,7 @@ Some functions provided here are intended to be used as building blocks for miss
 
 ## Features and Roadmap
 
-- [ ] Common analytical VDFs
-    - [x] Maxwellian / BiMaxwellian
-    - [x] Kappa / BiKappa
-    - [ ] Powerlaw
-    - [ ] Different forms (e.g. velocity distribution / pdf / flux / energy flux)
-    - [ ] Define algebraic operations on VDFs (e.g. addition, subtraction, multiplication, division)
-    - [ ] Fitting VDFs to data
+- [ ] Fitting analytic distribution models (bi-Maxwellian, bi-kappa, …) to data
 - [x] Generate pitch-angle distributions (PADs) from VDFs
     - [x] New PADs by averaging over multiple energy channels
 - [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs

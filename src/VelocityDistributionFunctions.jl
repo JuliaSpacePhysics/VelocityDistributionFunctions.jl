@@ -2,28 +2,20 @@ module VelocityDistributionFunctions
 
 using Bumper: @alloc, @no_escape
 using LinearAlgebra
-using StaticArrays: SVector, SMatrix, MVector, SA, @SMatrix
+using StaticArrays: SVector, SMatrix, SA, @SMatrix
 using MuladdMacro: @muladd
 using Base: tail
 using StructArrays: StructArray
 
-include("utils.jl")
 include("unit_conversion.jl")
 include("spectra.jl")
 include("pad.jl")
 include("flux.jl")
 include("moments.jl")
-include("distributions/Distributions.jl")
 include("pyspedas.jl")
 
 export pitch_angle_distribution, tpitch_angle_distribution
 export directional_energy_spectra
 export plasma_moments, tmoments
-export VelocityDistribution, KappaDistribution, BiMaxwellian, BiKappa, Maxwellian, Kappa
-export AbstractVelocityPDF, AbstractVelocityDistribution
-export MaxwellianPDF, BiMaxwellianPDF, KappaPDF, BiKappaPDF, ShiftedPDF
-export pdf
-export kappa_thermal_speed
-export VPar, VPerp
 
 end
