@@ -7,13 +7,6 @@ _phi(phi, J) = phi[J]
 _phi(phi::AbstractVector, J::CartesianIndex{2}) = phi[J[1]]
 _phi(phi::Real, J) = phi
 
-# Solid angle per bin: dΩ ∝ |sin(θ+dθ/2) - sin(θ-dθ/2)| · dφ
-function _domega(θ, dθ, dφ)
-    sth2 = sin(θ + dθ / 2)
-    sth1 = sin(θ - dθ / 2)
-    return abs(sth2 - sth1) * dφ
-end
-
 """
     omega_weights(theta, phi, dtheta, dphi)
 
@@ -29,30 +22,31 @@ The 10 weight channels are:
 | 2–4   | ``\\hat{x},\\hat{y},\\hat{z}`` flux   | particle/energy flux |
 | 5–10  | ``xx,yy,zz,xy,xz,yz`` | momentum flux tensor|
 
-Follows the IDL/PySPEDAS `moments_3d_omega_weights` convention (latitude angles).
+Bin center `theta` is the polar angle.
 """
 function omega_weights(th, ph, dth, dph)
-    sth1, cth1 = sincos(th - dth / 2)
-    sth2, cth2 = sincos(th + dth / 2)
-    sph1, cph1 = sincos(ph - dph / 2)
-    sph2, cph2 = sincos(ph + dph / 2)
+    st1, ct1 = sincos(th - dth / 2)
+    st2, ct2 = sincos(th + dth / 2)
+    sp1, cp1 = sincos(ph - dph / 2)
+    sp2, cp2 = sincos(ph + dph / 2)
 
-    ict = sth2 - sth1
-    icp = sph2 - sph1
-    isp = -cph2 + cph1
-
-    is2p = dph / 2 - sph2 * cph2 / 2 + sph1 * cph1 / 2
-    ic2p = dph / 2 + sph2 * cph2 / 2 - sph1 * cph1 / 2
-    ic2t = dth / 2 + sth2 * cth2 / 2 - sth1 * cth1 / 2
-    ic3t = sth2 - sth1 - (sth2^3 - sth1^3) / 3
-    ictst = (sth2^2 - sth1^2) / 2
-    icts2t = (sth2^3 - sth1^3) / 3
-    ic2tst = (-cth2^3 + cth1^3) / 3
-    icpsp = (sph2^2 - sph1^2) / 2
-    # solid angle
-    # flux x, y, z
-    # momentum flux tensor xx, yy, zz, xy, xz, yz
-    return (ict * dph, ic2t * icp, ic2t * isp, ictst * dph, ic3t * ic2p, ic3t * is2p, icts2t * dph, ic3t * icpsp, ic2tst * icp, ic2tst * isp)
+    # θ integrals of the direction-cosine products, including the sinθ of dΩ
+    it = ct1 - ct2                                   # ∫ sinθ
+    it_x = dth / 2 - (st2 * ct2 - st1 * ct1) / 2     # ∫ sin²θ
+    it_z = (st2^2 - st1^2) / 2                       # ∫ sinθ cosθ
+    it_xx = it - (ct1^3 - ct2^3) / 3                 # ∫ sin³θ
+    it_zz = (ct1^3 - ct2^3) / 3                      # ∫ sinθ cos²θ
+    it_xz = (st2^3 - st1^3) / 3                      # ∫ sin²θ cosθ
+    # φ integrals
+    ip_x = sp2 - sp1                                 # ∫ cosφ
+    ip_y = cp1 - cp2                                 # ∫ sinφ
+    ip_xx = dph / 2 + (sp2 * cp2 - sp1 * cp1) / 2    # ∫ cos²φ
+    ip_yy = dph / 2 - (sp2 * cp2 - sp1 * cp1) / 2    # ∫ sin²φ
+    ip_xy = (sp2^2 - sp1^2) / 2                      # ∫ sinφ cosφ
+    return (
+        it * dph, it_x * ip_x, it_x * ip_y, it_z * dph,
+        it_xx * ip_xx, it_xx * ip_yy, it_zz * dph, it_xx * ip_xy, it_xz * ip_x, it_xz * ip_y,
+    )
 end
 
 # Bin edges in degrees

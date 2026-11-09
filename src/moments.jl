@@ -7,25 +7,12 @@ include("moments/omega_weights.jl")
 include("moments/helpers.jl")
 include("moments/compute.jl")
 
-# ── High-level time-series interface ─────────────────────────────────────────
-
 """
-    tmoments(data, theta, phi, energy, sc_pot, magf; tdim, edim, kw...)
+    tmoments(data, theta, phi, energy, sc_pot = 0, magf = nothing; species, tdim = ndims(data), edim = 1, kw...)
 
-Compute plasma moments for every timestep in a multi-time raw distribution array.
-
-Loops over the time dimension `tdim`, calling [`plasma_moments`](@ref) for each slice, and returns a `StructArray`.
-
-## Keyword Arguments
-- `tdim`:        Which axis of `data` is time (**required**).
-
-## Returns
-A `StructArray` of moment `NamedTuple`s, one per timestep.
-
-## Example
-```julia
-tmoments(data, theta, phi, energy; species=:H, tdim=1, edim=4)
-```
+[`plasma_moments`](@ref) of each slice of `data` along its time axis `tdim`, as a `StructArray`.
+`edim` indexes the axes of `data` including time. `sc_pot` is a number or one value per time;
+`theta`, `phi`, `energy` and `magf` are vectors shared by all times or matrices with time first.
 """
 @inline function tmoments(data, theta, phi, energy, sc_pot = 0, magf = nothing; tdim = ndims(data), edim = 1, kw...)
     nt = size(data, tdim)
@@ -44,53 +31,20 @@ tmoments(data, theta, phi, energy; species=:H, tdim=1, edim=4)
     return result
 end
 
-# ── High-level single-timestep interface ─────────────────────────────────────
 """
-    plasma_moments(dist, sc_pot=0, magf=nothing; mass, charge, edim)
+    plasma_moments(dist, sc_pot = 0, magf = nothing; species, units = :eflux, edim = 1)
 
-Compute all plasma moments from a single distribution on a spherical energy-angle grid.
+Moments of one distribution on an energy-angle grid, as a `NamedTuple`; field-aligned quantities are added when `magf` is given.
 
-Handles unit conversion, species mass/charge lookup, and coordinate transforms internally.
-
-## Arguments
-- `dist`:   Distribution struct with fields `data`, `energy`, `theta`, `phi`, `mass`, `charge`.
-- `sc_pot`:  Spacecraft potential `[V]`. Positive potential repels ions.
-- `magf`:    Magnetic field vector for field-aligned decomposition.
-            If `nothing` (default), field-aligned quantities are omitted.
-
-## Keyword Arguments
-- `species`: Species symbol (`:H`, `:He`, `:O`, `:e`). Determines mass, charge, and the `A` parameter for unit conversion. Defaults to `:H`.
-- `edim`: Energy axis index in `data` (default `1`). When `edim ≠ 1`, a `permutedims` moves energy to the first axis internally.
-- `units`: Input unit system (`:eflux`, `:flux`, `:df_km`, `:df_cm`). Default `:eflux` (no conversion).
-
-## Returns
-A `NamedTuple` of plasma moments.
-
-## Assumptions
-The input distribution must have the following fields:
-
-- `data`:    Distribution values in energy flux units `[eV/(cm²·s·sr·eV)]`
-- `energy` and `denergy`:  Energy bin centers and widths `[eV]` (`denergy` is optional; estimated from `energy` if absent)
-- `theta` and `dtheta`:   Latitude angle bin centers and widths `[deg]` (`dtheta`/`dphi` optional; estimated from centres if absent)
-- `phi` and `dphi`:     Azimuthal angle bin centers  and widths `[deg]`
-- `mass`:    Particle mass `[eV/(cm/s)²]`
-- `charge`:  Particle charge `[elementary charges, signed]` (optional; defaults to `1`)
-
-`data` may be either 2D `(n_energy, n_angles)` (reformed/flattened) or 3D `(n_energy, n_phi, n_theta)` (unreformed).
-
-Energy arrays (`energy`, `denergy`) may be supplied as:
-- a full array matching the shape of `data`, when energy bins vary across angles, or
-- a 1D vector of length `n_energy`, when energy bins are the same for every angle.
-
-Angle arrays (`theta`, `dtheta`, `phi`, `dphi`) may be supplied as:
-- an array matching the angle-only dimensions of `data` (i.e. shape `(n_angles,)` or `(n_phi, n_theta)`).
-- a 1D vector of length `n_theta` for `theta`, and `n_phi` for `phi`, when `data` is 3D.
-
-### Angular convention (SPEDAS-compatible)
-- `theta`: latitude / elevation angle (−90° to 90°), **not** colatitude
-- `phi`: azimuth (0° to 360°)
+- `dist` has fields `data`, `energy` [eV], `theta`, `phi` [deg], and optionally the bin widths `denergy`, `dtheta`, `dphi`, otherwise estimated from the centers.
+- `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_km` [s³/km⁶] or `:df_cm` [s³/cm⁶].
+  Its energy axis is `edim`, and its other axes are a flattened angle axis or `(φ, θ)`.
+- `energy`, `denergy` are vectors along energy or arrays shaped like `data`.
+  Angle arrays are shaped like the angle axes of `data`, or are vectors along `φ` and `θ` when those are separate axes.
+- `species` (`:H`, `:He`, `:O`, `:e`) sets the mass, charge and unit-conversion factor.
+- `sc_pot` [V] shifts energies by `charge * sc_pot`; positive repels ions.
 """
-@inline function plasma_moments(dist, scpot = 0, magf = nothing; species = :H, units = :eflux, edim = 1, kw...)
+@inline function plasma_moments(dist, scpot = 0, magf = nothing; species, units = :eflux, edim = 1, kw...)
     s = species_info(species)
     dtheta = get(dist, :dtheta, nothing)
     dphi = get(dist, :dphi, nothing)
@@ -101,7 +55,7 @@ end
 
 _osize(data, dim) = ntuple(i -> size(data, i < dim ? i : i + 1), ndims(data) - 1)
 
-@inline function _plasma_moments(data, theta, phi, _energy, sc_pot, magf; coefficient = 1.0, E_exp = 0, mass = _PROTON_MASS, charge = 1.0, dtheta = nothing, dphi = nothing, dE = nothing, edim = 1)
+@inline function _plasma_moments(data, theta, phi, _energy, sc_pot, magf; coefficient = 1.0, E_exp = 0, mass, charge, dtheta = nothing, dphi = nothing, dE = nothing, edim = 1)
     T = eltype(data)
     edims = size(_energy)
     adims = _osize(data, edim)   # angle-only dimensions (everything after energy)

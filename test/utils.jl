@@ -8,12 +8,3 @@ function download_test_data(url, filename = basename(url))
     end
     return filepath
 end
-
-_angle(input) = selectdim(input, 1, 1)
-
-# --- Compute moments in Julia for each timestep ---
-_dict2nt(dist) = (
-    data = dist["data"], energy = unique(dist["energy"]),
-    theta = _angle(dist["theta"]), phi = _angle(dist["phi"]),
-    dtheta = _angle(dist["dtheta"]), dphi = _angle(dist["dphi"]),
-)

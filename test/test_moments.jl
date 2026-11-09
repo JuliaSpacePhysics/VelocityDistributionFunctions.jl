@@ -24,34 +24,17 @@ end
     reffile = download_test_data(ref_url)
     saved = JLD2.load(reffile)["result"]
     ref = saved["ref"]
-    dists_data = saved["distributions"]
     mag_data = saved["mag_data"]
     scpot_data = saved["scpot_data"]
-    ntimes = length(saved["times"])
-    dists = _dict2nt.(dists_data)
 
-    moms = tmoments(dists, scpot_data)
-    @test moms.density ≈ ref["density"]
-    @test moms.avgtemp ≈ ref["avgtemp"]
-    @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"])
-    @test moms.flux ≈ eachrow(ref["flux"])
-    @test moms.eflux ≈ eachrow(ref["eflux"])
-    @test moms.qflux ≈ eachrow(ref["qflux"])
-    @test moms.ptens ≈ eachrow(ref["ptens"])
-    @test moms.t3 ≈ eachrow(ref["t3"])
-    moms = tmoments(dists, scpot_data, eachrow(mag_data))
-    @test moms.magt3 ≈ eachrow(ref["magt3"])
-    @test moms.symm_ang ≈ ref["symm_ang"]
-
-    # Test raw tplot data path (before mms_get_fpi_dist processing).
-    # mms_get_fpi_dist applies: theta_gse = colat - 90, phi_gse = (phi + 180) % 360
+    # Raw tplot data (before mms_get_fpi_dist processing); FPI angles are look directions; velocity direction is θ → 180 - θ, φ → φ + 180
     mms1_dis_dist_brst = saved["dis_dist_brst"]
     data = mms1_dis_dist_brst["data"]
-    theta = mms1_dis_dist_brst["theta"] .- 90
+    theta = 180 .- mms1_dis_dist_brst["theta"]
     phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
     energy = mms1_dis_dist_brst["energy"]
-    moms = tmoments(data, theta, phi, energy, scpot_data, mag_data; edim = 4, tdim = 1, units = :df_cm)
-    @info @b tmoments($data, $theta, $phi, $energy, $scpot_data, $mag_data; edim = 4, tdim = 1, units = :df_cm)
+    moms = tmoments(data, theta, phi, energy, scpot_data, mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)
+    @info @b tmoments($data, $theta, $phi, $energy, $scpot_data, $mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 1.0e-6
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 1.0e-6
@@ -60,4 +43,6 @@ end
     @test moms.qflux ≈ eachrow(ref["qflux"]) rtol = 1.0e-5
     @test moms.ptens ≈ eachrow(ref["ptens"]) rtol = 1.0e-6
     @test moms.t3 ≈ eachrow(ref["t3"]) rtol = 1.0e-6
+    @test moms.magt3 ≈ eachrow(ref["magt3"]) rtol = 1.0e-6
+    @test moms.symm_ang ≈ ref["symm_ang"] rtol = 1.0e-5
 end
