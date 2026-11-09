@@ -33,8 +33,8 @@ end
     theta = mms1_dis_dist_brst["theta"] .- 90
     phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
     energy = mms1_dis_dist_brst["energy"]
-    moms = tmoments(data, theta, phi, energy, scpot_data, mag_data; edim = 4, tdim = 1, units = :df_cm)
-    @info @b tmoments($data, $theta, $phi, $energy, $scpot_data, $mag_data; edim = 4, tdim = 1, units = :df_cm)
+    moms = tmoments(data, theta, phi, energy, scpot_data, mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)
+    @info @b tmoments($data, $theta, $phi, $energy, $scpot_data, $mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 1.0e-6
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 1.0e-6

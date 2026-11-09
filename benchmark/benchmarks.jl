@@ -30,6 +30,6 @@ let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     magf = randn(nt, 3)
 
     g = SUITE["tmoments"] = BenchmarkGroup()
-    g["no_magf"] = @benchmarkable tmoments($data, $theta, $phi, $energy, $scpot; edim = 4, tdim = 1, units = :df_cm)
-    g["with_magf"] = @benchmarkable tmoments($data, $theta, $phi, $energy, $scpot, $magf; edim = 4, tdim = 1, units = :df_cm)
+    g["no_magf"] = @benchmarkable tmoments($data, $theta, $phi, $energy, $scpot; edim = 4, tdim = 1, units = :df_cm, species = :H)
+    g["with_magf"] = @benchmarkable tmoments($data, $theta, $phi, $energy, $scpot, $magf; edim = 4, tdim = 1, units = :df_cm, species = :H)
 end
