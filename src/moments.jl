@@ -14,13 +14,7 @@ include("moments/compute.jl")
 
 Compute plasma moments for every timestep in a multi-time raw distribution array.
 
-Loops over the time dimension `tdim`, calling [`plasma_moments`](@ref) for each slice, and returns a `StructArray`.
-
-## Keyword Arguments
-- `tdim`:        Which axis of `data` is time (**required**).
-
-## Returns
-A `StructArray` of moment `NamedTuple`s, one per timestep.
+Loops over the time dimension `tdim`, calling [`plasma_moments`](@ref) for each slice, and returns a `StructArray` of moment `NamedTuple`s.
 
 ## Example
 ```julia
