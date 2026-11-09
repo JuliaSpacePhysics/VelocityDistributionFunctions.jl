@@ -37,5 +37,5 @@ theta = mms1_dis_dist_brst["theta"] .- 90
 phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
 energy = mms1_dis_dist_brst["energy"]
 scpot_data = saved["scpot_data"]
-out = tmoments(data, theta, phi, energy, scpot_data; edim=4, tdim=1, units=:df_cm)
+out = tmoments(data, theta, phi, energy, scpot_data; edim=4, tdim=1, units=:df_cm, species=:H)
 ```

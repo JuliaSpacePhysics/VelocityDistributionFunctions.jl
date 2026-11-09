@@ -59,7 +59,7 @@ Handles unit conversion, species mass/charge lookup, and coordinate transforms i
             If `nothing` (default), field-aligned quantities are omitted.
 
 ## Keyword Arguments
-- `species`: Species symbol (`:H`, `:He`, `:O`, `:e`). Determines mass, charge, and the `A` parameter for unit conversion. Defaults to `:H`.
+- `species`: Species symbol (`:H`, `:He`, `:O`, `:e`). Determines mass, charge, and the `A` parameter for unit conversion.
 - `edim`: Energy axis index in `data` (default `1`). When `edim ≠ 1`, a `permutedims` moves energy to the first axis internally.
 - `units`: Input unit system (`:eflux`, `:flux`, `:df_km`, `:df_cm`). Default `:eflux` (no conversion).
 
@@ -90,7 +90,7 @@ Angle arrays (`theta`, `dtheta`, `phi`, `dphi`) may be supplied as:
 - `theta`: latitude / elevation angle (−90° to 90°), **not** colatitude
 - `phi`: azimuth (0° to 360°)
 """
-@inline function plasma_moments(dist, scpot = 0, magf = nothing; species = :H, units = :eflux, edim = 1, kw...)
+@inline function plasma_moments(dist, scpot = 0, magf = nothing; species, units = :eflux, edim = 1, kw...)
     s = species_info(species)
     dtheta = get(dist, :dtheta, nothing)
     dphi = get(dist, :dphi, nothing)
@@ -101,7 +101,7 @@ end
 
 _osize(data, dim) = ntuple(i -> size(data, i < dim ? i : i + 1), ndims(data) - 1)
 
-@inline function _plasma_moments(data, theta, phi, _energy, sc_pot, magf; coefficient = 1.0, E_exp = 0, mass = _PROTON_MASS, charge = 1.0, dtheta = nothing, dphi = nothing, dE = nothing, edim = 1)
+@inline function _plasma_moments(data, theta, phi, _energy, sc_pot, magf; coefficient = 1.0, E_exp = 0, mass, charge, dtheta = nothing, dphi = nothing, dE = nothing, edim = 1)
     T = eltype(data)
     edims = size(_energy)
     adims = _osize(data, edim)   # angle-only dimensions (everything after energy)

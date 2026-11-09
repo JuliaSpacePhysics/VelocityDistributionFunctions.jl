@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: `plasma_moments` and `tmoments` require the `species` keyword; it defaulted to `:H`.
+
 ### Removed
 
 - **Breaking**: `tmoments(dists::AbstractVector, sc_pots[, magfs])`; use `StructArray(plasma_moments.(dists, sc_pots, magfs; kw...))`.
