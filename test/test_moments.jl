@@ -27,10 +27,10 @@ end
     mag_data = saved["mag_data"]
     scpot_data = saved["scpot_data"]
 
-    # Raw tplot data (before mms_get_fpi_dist processing); mms_get_fpi_dist applies: theta_gse = colat - 90, phi_gse = (phi + 180) % 360
+    # Raw tplot data (before mms_get_fpi_dist processing); FPI angles are look directions; velocity direction is θ → 180 - θ, φ → φ + 180
     mms1_dis_dist_brst = saved["dis_dist_brst"]
     data = mms1_dis_dist_brst["data"]
-    theta = mms1_dis_dist_brst["theta"] .- 90
+    theta = 180 .- mms1_dis_dist_brst["theta"]
     phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
     energy = mms1_dis_dist_brst["energy"]
     moms = tmoments(data, theta, phi, energy, scpot_data, mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)

@@ -15,6 +15,11 @@ Analysis tools for particle velocity distribution functions (VDFs).
 
 Some functions provided here are intended to be used as building blocks for mission-specific particle distribution tools. Mission-specific wrappers will generally be needed to load the particle data to be operated on, perform calibration, sanitization, and other preliminary steps.
 
+## Conventions
+
+- Angles are in degrees and give the particle velocity direction (not the instrument look direction) in physics spherical coordinates: `θ` is the polar angle from `ẑ` (0–180°), `φ` the azimuth from `x̂` (0–360°).
+  For instruments reporting look directions, the velocity direction is `θ → 180 - θ`, `φ → φ + 180`.
+
 ## Features and Roadmap
 
 - [ ] Fitting analytic distribution models (bi-Maxwellian, bi-kappa, …) to data

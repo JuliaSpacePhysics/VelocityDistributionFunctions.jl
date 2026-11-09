@@ -71,7 +71,7 @@ The input distribution must have the following fields:
 
 - `data`:    Distribution values in energy flux units `[eV/(cm²·s·sr·eV)]`
 - `energy` and `denergy`:  Energy bin centers and widths `[eV]` (`denergy` is optional; estimated from `energy` if absent)
-- `theta` and `dtheta`:   Latitude angle bin centers and widths `[deg]` (`dtheta`/`dphi` optional; estimated from centres if absent)
+- `theta` and `dtheta`:   Polar angle bin centers and widths `[deg]` (`dtheta`/`dphi` optional; estimated from centres if absent)
 - `phi` and `dphi`:     Azimuthal angle bin centers  and widths `[deg]`
 - `mass`:    Particle mass `[eV/(cm/s)²]`
 - `charge`:  Particle charge `[elementary charges, signed]` (optional; defaults to `1`)
@@ -85,10 +85,6 @@ Energy arrays (`energy`, `denergy`) may be supplied as:
 Angle arrays (`theta`, `dtheta`, `phi`, `dphi`) may be supplied as:
 - an array matching the angle-only dimensions of `data` (i.e. shape `(n_angles,)` or `(n_phi, n_theta)`).
 - a 1D vector of length `n_theta` for `theta`, and `n_phi` for `phi`, when `data` is 3D.
-
-### Angular convention (SPEDAS-compatible)
-- `theta`: latitude / elevation angle (−90° to 90°), **not** colatitude
-- `phi`: azimuth (0° to 360°)
 """
 @inline function plasma_moments(dist, scpot = 0, magf = nothing; species, units = :eflux, edim = 1, kw...)
     s = species_info(species)
