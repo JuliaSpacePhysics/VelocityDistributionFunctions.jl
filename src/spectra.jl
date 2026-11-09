@@ -68,16 +68,16 @@ function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_widt
     end
 end
 
-function PAspectra(S, dE, min_channels, max_channels)
+function pitch_angle_spectra(S, dE, min_channels, max_channels)
     n_pa, _, n_time = size(S)
     T = promote_type(eltype(S), eltype(dE))
     # Allocate working arrays for this energy range
     numerator = similar(S, T, n_pa, n_time)
     denominator = similar(S, T, n_pa, n_time)
-    return PAspectra!(S, dE, min_channels, max_channels, numerator, denominator)
+    return pitch_angle_spectra!(S, dE, min_channels, max_channels, numerator, denominator)
 end
 
-function PAspectra!(S, dE, min_channels, max_channels, numerator, denominator)
+function pitch_angle_spectra!(S, dE, min_channels, max_channels, numerator, denominator)
     return map(min_channels, max_channels) do min_ch, max_ch
         _pa_kernel!(numerator, denominator, S, dE, min_ch, max_ch)
         numerator ./ denominator

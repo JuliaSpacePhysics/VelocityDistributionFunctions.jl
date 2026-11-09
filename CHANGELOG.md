@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Breaking**: `PAspectra` is renamed `pitch_angle_spectra`.
 - **Breaking**: angles follow physics spherical coordinates of the particle velocity direction (README Conventions). `plasma_moments`/`tmoments` previously took the latitude `θ` (SPEDAS), now the polar angle `90 - θ`; their `symm_theta` output is likewise the polar angle. `pitch_angle_distribution`/`tpitch_angle_distribution` previously took look directions, now velocity directions `(180 - θ, φ + 180)`.
 - **Breaking**: `plasma_moments` and `tmoments` require the `species` keyword; it defaulted to `:H`.
 
