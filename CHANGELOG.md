@@ -4,6 +4,7 @@
 
 ### Removed
 
+- **Breaking**: `tmoments(dists::AbstractVector, sc_pots[, magfs])`; use `StructArray(plasma_moments.(dists, sc_pots, magfs; kw...))`.
 - **Breaking**: the analytic distribution types (`Maxwellian`, `BiMaxwellian`, `Kappa`, `BiKappa`, their `*PDF` cores, `ShiftedPDF`, `VelocityDistribution`, `AbstractVelocityPDF`, `AbstractVelocityDistribution`, `KappaDistribution`, `pdf`, `kappa_thermal_speed`, `VPar`, `VPerp`) and the Unitful and Distributions extensions are removed. Use [PlasmaPopulations.jl](https://github.com/JuliaSpacePhysics/PlasmaPopulations.jl), with `vth = √(2T/m)` for every model and SI storage:
   - `Maxwellian(vth)` → `BiMaxwellian(; vth)`; `BiMaxwellian(vth_perp, vth_para)` → `BiMaxwellian(; vth_perp, vth_para)`
   - `Kappa(vth, κ)` → `BiKappa(; vth = vth * s, kappa = κ)` with `s = sqrt(κ / (κ - 3 / 2))`, likewise each speed of `BiKappa(vth_perp, vth_para, κ)`, since the old `vth` was not temperature-preserving

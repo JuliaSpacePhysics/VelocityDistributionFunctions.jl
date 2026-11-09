@@ -12,7 +12,6 @@ include("spectra.jl")
 include("pad.jl")
 include("flux.jl")
 include("moments.jl")
-include("pyspedas.jl")
 
 export pitch_angle_distribution, tpitch_angle_distribution
 export directional_energy_spectra
