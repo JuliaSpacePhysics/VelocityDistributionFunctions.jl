@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Breaking**: angles follow physics spherical coordinates of the particle velocity direction. `plasma_moments`/`tmoments` previously took the latitude `θ` (SPEDAS), now the polar angle. `pitch_angle_distribution`/`tpitch_angle_distribution` previously took look directions, now velocity directions.
 - **Breaking**: `plasma_moments` and `tmoments` require the `species` keyword; it defaulted to `:H`.
 
 ### Removed

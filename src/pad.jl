@@ -1,7 +1,7 @@
 """
     pitch_angle_distribution(vdf, B, φ, θ; bins=nothing, method=:mean) -> (; data, pitch_angles)
 
-Compute pitch-angle distributions from particle `vdf` and magnetic field `B` measurements, given azimuthal `φ` and polar `θ` angles.
+Compute pitch-angle distributions from particle `vdf` and magnetic field `B` measurements, given velocity directions `φ`, `θ`.
 
 Returns a named tuple with fields:
 - `data`: Pitch-angle distribution array `(nbins,)` for 2-D input `vdf` or `(nbins, energy)` for 3-D input `vdf`
@@ -38,7 +38,7 @@ end
 """
     tpitch_angle_distribution(vdf, B, φ, θ; bins=nothing, method=:mean)
 
-Compute pitch-angle distributions ***time series*** from particle `vdf` and magnetic field `B` measurements, given azimuthal `φ` and polar `θ` angles.
+Compute pitch-angle distributions ***time series*** from particle `vdf` and magnetic field `B` measurements, given velocity directions `φ`, `θ`.
 
 Returns a named tuple with fields:
 - `data`: Pitch-angle distribution array, `(nbins, time)` for 3-D or `(nbins, energy, time)` for 4-D input `vdf`
@@ -113,8 +113,7 @@ function _accumulate_pad!(pad, counts, vdf, B, φ, θ, edges; method = :mean)
         sθ, cθ = sincosd(θ_k)
         for (j, φ_j) in enumerate(φ)
             sφ, cφ = sincosd(φ_j)
-            look = SA[-cφ * sθ, -sφ * sθ, -cθ]
-            pitch = acosd(dot(look, B_norm))
+            pitch = acosd(dot(SA[cφ * sθ, sφ * sθ, cθ], B_norm))
             bin_idx = searchsortedfirst(edges, pitch) - 1
             bin_idx in (0, n) && continue
             # Accumulate across energy dimension

@@ -1,19 +1,17 @@
 # VelocityDistributionFunctions
 
 [![DOI](https://zenodo.org/badge/1072447322.svg)](https://doi.org/10.5281/zenodo.17905508)
-[![version](https://juliahub.com/docs/General/VelocityDistributionFunctions/stable/version.svg)](https://juliahub.com/ui/Packages/General/VelocityDistributionFunctions)
 
-[![Build Status](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/JuliaSpacePhysics/VelocityDistributionFunctions.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/VelocityDistributionFunctions.jl)
-[![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 Analysis tools for particle velocity distribution functions (VDFs).
 
 **Installation**: at the Julia REPL, run `using Pkg; Pkg.add("VelocityDistributionFunctions")`
 
-**Documentation**: [![Dev](https://img.shields.io/badge/docs-dev-blue.svg?logo=julia)](https://JuliaSpacePhysics.github.io/VelocityDistributionFunctions.jl/dev/)
-
 Some functions provided here are intended to be used as building blocks for mission-specific particle distribution tools. Mission-specific wrappers will generally be needed to load the particle data to be operated on, perform calibration, sanitization, and other preliminary steps.
+
+## Conventions
+
+- Angles are in degrees and give the particle velocity direction in physics spherical coordinates: `θ` is the polar angle from `ẑ` (0–180°), `φ` the azimuth from `x̂` (0–360°).
 
 ## Features and Roadmap
 

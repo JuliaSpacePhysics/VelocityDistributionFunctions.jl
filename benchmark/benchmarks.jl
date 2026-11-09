@@ -23,7 +23,7 @@ end
 # tmoments benchmark with synthetic MMS-like data
 let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     data = rand(Float32, nt, nphi, ntheta, nenergy)
-    theta = collect(range(-90.0, 90.0, length = ntheta))
+    theta = collect(range(0.0, 180.0, length = ntheta))
     phi = collect(range(0.0, 360.0, length = nphi + 1)[1:nphi])
     energy = 10 .^ collect(range(log10(10.0), log10(30000.0), length = nenergy))
     scpot = zeros(nt)

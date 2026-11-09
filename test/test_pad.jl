@@ -9,7 +9,7 @@ using VelocityDistributionFunctions
 
 
     # test both time-invariant and time-varying B and phi
-    for B in ([0.0, 0.0, -1.0], reshape([0.0, 0.0, -1.0], 3, 1))
+    for B in ([0.0, 0.0, 1.0], reshape([0.0, 0.0, 1.0], 3, 1))
         for phi in ([0.0; 180.0;;], [0.0, 180.0])
             theta = [0.1; 179.9;;]
 
@@ -27,7 +27,7 @@ end
     flux[1, 1, 1, 1] = 3.0  # phi=0°, theta=0° -> pitch=0°
     flux[2, 2, 1, 1] = 6.0  # phi=180°, theta=180° -> pitch=180°
 
-    B = reshape([0.0, 0.0, -1.0], 3, 1)  # (3, time)
+    B = reshape([0.0, 0.0, 1.0], 3, 1)  # (3, time)
     phi = [0.0, 180.0]
     theta = [0.1, 179.9]
 

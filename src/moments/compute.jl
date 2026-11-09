@@ -42,7 +42,7 @@ end
 function ehatd(th, ph)
     sth, cth = sincosd(th)
     sph, cph = sincosd(ph)
-    SA[cth * cph, cth * sph, sth]
+    SA[sth * cph, sth * sph, cth]
 end
 
 @muladd function compute_heat_flux(fE_kernel, Omega, theta, phi, v_inf, tmp, mass, velocity; edim = 1)
@@ -150,7 +150,7 @@ function compute_field_aligned(ttens, t3evec, velocity, magf)
     symm = dot_val < 0 ? -symm_col : symm_col
 
     symm_r = norm(symm)
-    symm_theta = asind(symm[3] / symm_r)
+    symm_theta = acosd(symm[3] / symm_r)
     symm_phi = atand(symm[2], symm[1])
 
     return (; magt3, symm, symm_theta, symm_phi, symm_ang)
