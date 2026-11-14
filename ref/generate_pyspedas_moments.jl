@@ -50,14 +50,14 @@ names = [
     "t3", "magt3", "symm", "symm_theta", "symm_phi", "symm_ang",
     "energy", "theta",
 ]
-ref = Dict(name => Array(get_data(suffix * name)) for name in names)
+ref = Dict{String, Any}(name => Array(get_data(suffix * name)) for name in names)
 
 
 # ── 3. Extract cleaned distribution data per timestep ───────────────────────
 data_in = py_get_data(tname)
 
 # Save the data for unit tests
-dis_dist_brst = Dict(
+dis_dist_brst = Dict{String, Any}(
     "data" => pyconvert(Array, data_in.y),
     "phi" => pyconvert(Array, data_in.v1),
     "theta" => pyconvert(Array, data_in.v2),
