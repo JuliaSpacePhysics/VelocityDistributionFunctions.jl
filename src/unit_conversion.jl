@@ -2,21 +2,21 @@
 
 const PROTON_MASS = 0.0104535 * 1.0e-10  # eV/(cm/s)²
 
-# Species lookup: mass in eV/(cm/s)², charge in elementary charges, A for unit conversion
-const _SPECIES_TABLE = Dict(
-    :H => (mass = 1.0 * PROTON_MASS, charge = 1.0, A = 1.0),
-    :He => (mass = 4.0 * PROTON_MASS, charge = 2.0, A = 4.0),
-    :O => (mass = 16.0 * PROTON_MASS, charge = 1.0, A = 16.0),
-    :e => (mass = PROTON_MASS / 1836.0, charge = -1.0, A = 1.0 / 1836.0),
+# mass in proton masses, charge in elementary charges
+const _SPECIES = (
+    H = (mass = 1.0, charge = 1.0),
+    He = (mass = 4.0, charge = 2.0),
+    O = (mass = 16.0, charge = 1.0),
+    e = (mass = 1 / 1836, charge = -1.0),
 )
 
-# Supported species: `:H` (proton), `:He` (alpha), `:O` (oxygen), `:e` (electron).
-species_info(s::Symbol) = _SPECIES_TABLE[s]
+_species(s::Symbol) = _SPECIES[s]
+_species(s) = (; s.mass, s.charge)
 
 """
-    
+    _conversion_coeff(from, to, A)
 
-Returns (coefficient, energy_exponent) such that: out = data * c * E^p
+Returns (coefficient, energy_exponent) such that: out = data * c * E^p, for particles of mass `A` proton masses.
 
 Conversion chain: `df_cm ↔ df_km ↔ flux ↔ eflux`
 

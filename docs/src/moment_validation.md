@@ -37,5 +37,6 @@ theta = 180 .- mms1_dis_dist_brst["theta"]
 phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
 energy = mms1_dis_dist_brst["energy"]
 scpot_data = saved["scpot_data"]
-out = tmoments(data, theta, phi, energy, scpot_data; edim=4, tdim=1, units=:df_cm, species=:H)
+grids = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta))  # FPI φ and energy vary with time
+out = tmoments(data, grids; sc_pot = scpot_data, edim = 4, tdim = 1, units = :df_cm, species = :H)
 ```

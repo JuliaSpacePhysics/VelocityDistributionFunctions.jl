@@ -19,8 +19,9 @@ Some functions provided here are intended to be used as building blocks for miss
 |---|---|
 | `pitch_angle_distribution(vdf, B, φ, θ; bins = nothing, method = :mean)` | pitch-angle distribution of `vdf[φ, θ(, energy)]`, `bins` a count or edges (default 15° bins); returns `(; data, pitch_angles)` |
 | `tpitch_angle_distribution(vdf, B, φ, θ; bins, method)` | the same with a trailing time dimension on `vdf`, `B`, and optionally on `φ`, `θ` |
-| `plasma_moments(dist, sc_pot = 0, magf = nothing; species, units = :eflux, edim = 1)` | moments of one distribution; field-aligned quantities when `magf` is given |
-| `tmoments(data, theta, phi, energy, sc_pot = 0, magf = nothing; species, tdim = ndims(data), edim = 1, units)` | `plasma_moments` per time slice, as a `StructArray` |
+| `EnergyAngleGrid(energy, phi, theta; denergy, dphi, dtheta)` | spherical velocity-space grid of a distribution |
+| `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, edim = 1)` | moments of one distribution; field-aligned quantities when `B` is given |
+| `tmoments(data, grid; species, units, sc_pot, B, tdim = ndims(data), edim = 1)` | `plasma_moments` per time slice, as a `StructArray`; vector arguments give one value per time |
 | `directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)` | omni, parallel, antiparallel and perpendicular energy spectra `(; omni, para, anti, perp)` of `S[pitch, energy, time]` |
 | below | public, not exported |
 | `pitch_angle_spectra(S, dE, min_channels, max_channels)` | for each channel range `min_channels[i]:max_channels[i]`, the `dE`-weighted mean of `S[pitch, energy, time]` over energy, skipping non-finite values, as `[pitch, time]` |

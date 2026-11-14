@@ -27,9 +27,10 @@ let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     phi = collect(range(0.0, 360.0, length = nphi + 1)[1:nphi])
     energy = 10 .^ collect(range(log10(10.0), log10(30000.0), length = nenergy))
     scpot = zeros(nt)
-    magf = randn(nt, 3)
+    grid = EnergyAngleGrid(energy, phi, theta)
+    B = eachrow(randn(nt, 3))
 
     g = SUITE["tmoments"] = BenchmarkGroup()
-    g["no_magf"] = @benchmarkable tmoments($data, $theta, $phi, $energy, $scpot; edim = 4, tdim = 1, units = :df_cm, species = :H)
-    g["with_magf"] = @benchmarkable tmoments($data, $theta, $phi, $energy, $scpot, $magf; edim = 4, tdim = 1, units = :df_cm, species = :H)
+    g["no_magf"] = @benchmarkable tmoments($data, $grid; sc_pot = $scpot, edim = 4, tdim = 1, units = :df_cm, species = :H)
+    g["with_magf"] = @benchmarkable tmoments($data, $grid; sc_pot = $scpot, B = $B, edim = 4, tdim = 1, units = :df_cm, species = :H)
 end

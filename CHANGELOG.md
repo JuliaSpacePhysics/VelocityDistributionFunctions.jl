@@ -6,11 +6,14 @@
 
 - **Breaking**: `PAspectra` is renamed `pitch_angle_spectra`.
 - **Breaking**: angles follow physics spherical coordinates of the particle velocity direction. `plasma_moments`/`tmoments` previously took the latitude `θ` (SPEDAS), now the polar angle. `pitch_angle_distribution`/`tpitch_angle_distribution` previously took look directions, now velocity directions.
-- **Breaking**: `plasma_moments` and `tmoments` require the `species` keyword; it defaulted to `:H`.
+- **Breaking**: `plasma_moments` and `tmoments` require explicit `species` and `units` keywords.
+- **Breaking**: the energy-angle grid is an `EnergyAngleGrid`, and the spacecraft potential and magnetic field are keywords.
+  - `plasma_moments(dist, sc_pot, magf; kw...)` → `plasma_moments(dist.data, EnergyAngleGrid(dist.energy, dist.phi, dist.theta); sc_pot, B = magf, kw...)`
+  - `tmoments(data, theta, phi, energy, sc_pot, magf; kw...)` → `tmoments(data, grid; sc_pot, B, kw...)`. Time-varying inputs are vectors with one value per time instead of time-first matrices, e.g. `grid = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta))`, `B = eachrow(magf)`.
 
 ### Removed
 
-- **Breaking**: `tmoments(dists::AbstractVector, sc_pots[, magfs])`; use `StructArray(plasma_moments.(dists, sc_pots, magfs; kw...))`.
+- **Breaking**: `tmoments(dists::AbstractVector, sc_pots[, magfs])`; map `plasma_moments` over scans with the corresponding grid and ancillary keywords.
 - **Breaking**: the analytic distribution types (`Maxwellian`, `BiMaxwellian`, `Kappa`, ..., their `*PDF` cores, `ShiftedPDF`, `VelocityDistribution`, `AbstractVelocityDistribution`...) are removed. Use [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl), with `vth = √(2T/m)` for every model and SI storage:
   - `Maxwellian(vth)` → `BiMaxwellian(; vth)`; `BiMaxwellian(vth_perp, vth_para)` → `BiMaxwellian(; vth_perp, vth_para)`
   - `Kappa(vth, κ)` → `BiKappa(; vth = vth * s, kappa = κ)` with `s = sqrt(κ / (κ - 3 / 2))`, likewise each speed of `BiKappa(vth_perp, vth_para, κ)`
