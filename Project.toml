@@ -7,34 +7,16 @@ authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 projects = ["test", "docs", "benchmark"]
 
 [deps]
-BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
-ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
-Gamma = "a0844989-3bd2-4988-8bea-c9407ab0941b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MuladdMacro = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 
-[weakdeps]
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
-
-[extensions]
-VDFsDistributionsExt = "Distributions"
-VDFsUnitfulExt = "Unitful"
-
 [compat]
-BaseType = "0.2.0"
 Bumper = "0.7"
-ConstructionBase = "1"
-Distributions = "0.25"
-Gamma = "1"
 LinearAlgebra = "1"
 MuladdMacro = "0.2"
-Random = "1"
 StaticArrays = "1.9"
 StructArrays = "0.7"
-Unitful = "1"
 julia = "1.10"

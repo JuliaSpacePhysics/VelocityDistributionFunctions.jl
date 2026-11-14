@@ -12,6 +12,3 @@ Documentation for [VelocityDistributionFunctions](https://github.com/JuliaSpaceP
 ```@autodocs
 Modules = [VelocityDistributionFunctions]
 ```
-
-```@bibliography
-```

@@ -1,25 +1,9 @@
 using BenchmarkTools
 using VelocityDistributionFunctions
 using VelocityDistributionFunctions: directional_energy_spectra, PAspectra, sort_flux_by_pitch_angle!
-using StaticArrays: SA
 using JLD2
 
 const SUITE = BenchmarkGroup()
-
-const v3 = SA[0.5, 0.3, 0.8]
-
-dists = [
-    Maxwellian(1.0), BiMaxwellian(1.0, 2.0),
-    Kappa(1.0, 4.0), BiKappa(1.0, 2.0, 4.0),
-]
-
-for d in dists
-    name = String(nameof(typeof(d)))
-    g = SUITE[name] = BenchmarkGroup()
-    g["pdf"] = @benchmarkable pdf($d, $v3)
-    g["rand"] = @benchmarkable rand($d)
-    g["rand_1k"] = @benchmarkable rand($d, 1000)
-end
 
 include(joinpath(@__DIR__, "../test/fixtures/elfin_helpers.jl"))
 
