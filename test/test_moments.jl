@@ -33,8 +33,10 @@ end
     theta = 180 .- mms1_dis_dist_brst["theta"]
     phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
     energy = mms1_dis_dist_brst["energy"]
-    moms = tmoments(data, theta, phi, energy, scpot_data, mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)
-    @info @b tmoments($data, $theta, $phi, $energy, $scpot_data, $mag_data; edim = 4, tdim = 1, units = :df_cm, species = :H)
+    grids = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta))
+    B = eachrow(mag_data)
+    moms = tmoments(data, grids; sc_pot = scpot_data, B, edim = 4, tdim = 1, units = :df_cm, species = :H)
+    @info @b tmoments($data, $grids; sc_pot = $scpot_data, B = $B, edim = 4, tdim = 1, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 1.0e-6
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 1.0e-6
@@ -45,4 +47,35 @@ end
     @test moms.t3 ≈ eachrow(ref["t3"]) rtol = 1.0e-6
     @test moms.magt3 ≈ eachrow(ref["magt3"]) rtol = 1.0e-6
     @test moms.symm_ang ≈ ref["symm_ang"] rtol = 1.0e-5
+
+    m1 = plasma_moments(selectdim(data, 1, 1), grids[1]; sc_pot = scpot_data[1], edim = 3, units = :df_cm, species = (; mass = 1, charge = 1))
+    @test m1.density ≈ moms.density[1]
+end
+
+@testset "Energy-last scan geometry" begin
+    phi = [10., 100., 210., 300.]
+    theta = [35., 90., 145.]
+    energy = [8., 13., 22.]
+    widths = [5., 7., 9.]
+    data = reshape(Float32.(1:36), 4, 3, 3)
+    kw = (; units = :eflux, species = :H, edim = 3)
+    grid = EnergyAngleGrid(energy, phi, theta; denergy = widths)
+    expected = plasma_moments(data, grid; kw...)
+    efull = repeat(reshape(energy, 1, 1, :), 4, 3, 1)
+    wfull = repeat(reshape(widths, 1, 1, :), 4, 3, 1)
+    pfull = repeat(phi, 1, 3)
+    tfull = repeat(theta', 4)
+    for (e, w) in ((efull, nothing), (energy, wfull), (efull, widths))
+        actual = plasma_moments(data, EnergyAngleGrid(e, pfull, tfull; denergy = w); kw...)
+        @test actual.density ≈ expected.density
+        @test actual.velocity ≈ expected.velocity
+    end
+    reversed = plasma_moments(reverse(data; dims = 3), EnergyAngleGrid(reverse(energy), phi, theta); kw...)
+    @test reversed.density ≈ expected.density rtol = 4eps(Float32)
+    @test_throws UndefKeywordError plasma_moments(data, grid; species = :H)
+    series = reshape(data, 4, 3, 3, 1)
+    @test_throws DimensionMismatch tmoments(series, [grid, grid]; kw...)
+    @test_throws DimensionMismatch tmoments(series, grid; sc_pot = Float64[], kw...)
+    @test_throws DimensionMismatch tmoments(series, grid; B = [[1., 2.]], kw...)
+    @test_throws ArgumentError tmoments(series, grid; tdim = 3, kw...)
 end

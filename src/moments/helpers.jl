@@ -1,14 +1,13 @@
 # Build a CartesianIndex inserting `ie` at position `edim` among the other indices `J`.
 # e.g. _fullindex(3, 2, CartesianIndex(5,7)) → CartesianIndex(5,3,7)
 @inline function _fullindex(ie, edim, TJ::NTuple{N, Int}) where {N}
-    tuple = ntuple(i -> i < edim ? TJ[i] : i == edim ? ie : TJ[i - 1], N + 1)
-    return CartesianIndex(tuple)
+    return CartesianIndex(_fullindex_tuple(ie, edim, TJ))
 end
 
-_scalar(x, i) = x isa Number ? x : x[i]
-_vector(::Nothing, i) = nothing
-_vector(x::AbstractVector, i) = x
-_vector(x::AbstractMatrix, i) = selectdim(x, 1, i)
+@inline function _fullindex_tuple(ie, edim, TJ::NTuple{N, Int}) where {N}
+    return ntuple(i -> i < edim ? TJ[i] : i == edim ? ie : TJ[i - 1], N + 1)
+end
+
 
 # Rotation matrix with z' along `v1`, y' along `v1 × v2`, x' completing the triad.
 # Matches SPEDAS `rot_mat`.
@@ -39,41 +38,34 @@ function _temp_sort(eig)
 end
 
 
-# Estimate energy bin widths from bin centers.
-# de[i] = energy[i] - energy[i-1]  (backward difference)
-# denergy[i] = (de[i+1] + de[i]) / 2  (shifted average)
-# Edges: denergy[1] = de[2], denergy[end] = de[end]
-function _compute_denergy!(dE, energy)
-    n = size(energy, 1)
-    @inbounds for J in CartesianIndices(axes(energy)[2:end])
-        # backward differences: de[i] = energy[i] - energy[i-1]
-        # (de[1] is undefined, start from 2)
-        # interior: dE[i] = (de[i+1] + de[i]) / 2 for i in 2:n-1
-        for i in 2:(n - 1)
-            de_i = energy[i, J] - energy[i - 1, J]
-            de_ip1 = energy[i + 1, J] - energy[i, J]
-            dE[i, J] = (de_ip1 + de_i) / 2
-        end
-        dE[1, J] = energy[2, J] - energy[1, J]
-        dE[n, J] = energy[n, J] - energy[n - 1, J]
-    end
-    return dE
+_bin_difference(a, b, ::Nothing) = abs(a - b)
+function _bin_difference(a, b, period)
+    d = abs(a - b)
+    return d > period / 2 ? period - d : d
 end
 
-# Compute bin widths from bin centers using centered finite differences.
-# When `period` is given (e.g. 360 for azimuthal angles), differences that
-# exceed half the period are treated as circular wraps.
 function _bin_widths!(dx, x, period = nothing)
-    @assert length(x) > 1
     n = length(x)
-
-    _cdiff(a, b) = (d = abs(a - b); !isnothing(period) && d > period / 2 ? period - d : d)
-
-    dx[1] = _cdiff(x[2], x[1])
-    @inbounds for i in 2:(n - 1)
-        dx[i] = (_cdiff(x[i + 1], x[i]) + _cdiff(x[i], x[i - 1])) / 2
+    n >= 2 || throw(ArgumentError("supply a bin width for a singleton axis"))
+    @inbounds begin
+        prev = _bin_difference(x[2], x[1], period)
+        dx[1] = prev
+        for i in 2:(n - 1)
+            next = _bin_difference(x[i + 1], x[i], period)
+            dx[i] = (prev + next) / 2
+            prev = next
+        end
+        dx[n] = prev
     end
-    dx[n] = _cdiff(x[n], x[n - 1])
+    return dx
+end
+
+_axis_widths!(dx, x::AbstractVector, dim, period) = _bin_widths!(dx, x, period)
+function _axis_widths!(dx, x, dim, period)
+    for J in CartesianIndices(_osize(x, dim))
+        inds = _fullindex_tuple(Colon(), dim, Tuple(J))
+        _bin_widths!(view(dx, inds...), view(x, inds...), period)
+    end
     return dx
 end
 

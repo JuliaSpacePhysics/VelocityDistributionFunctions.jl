@@ -8,20 +8,69 @@ include("moments/helpers.jl")
 include("moments/compute.jl")
 
 """
-    tmoments(data, theta, phi, energy, sc_pot = 0, magf = nothing; species, tdim = ndims(data), edim = 1, kw...)
+    EnergyAngleGrid(energy, phi, theta; denergy = nothing, dphi = nothing, dtheta = nothing)
 
-Plasma moments of each slice of `data` along its time axis `tdim`, as a `StructArray`.
-`edim` indexes the axes of `data` including time. `sc_pot` is a number or one value per time;
-`theta`, `phi`, `energy` and `magf` are vectors shared by all times or matrices with time first.
+Bin centers of a spherical velocity-space grid: `energy` [eV] and the velocity direction `phi`, `theta` [deg].
+Missing bin widths are estimated from the centers.
+
+For data with energy axis `edim` and angle axes either one flattened axis or `(φ, θ)`:
+- `energy`, `denergy` are vectors along energy or arrays shaped like the data.
+- Angle arrays are shaped like the angle axes, or are vectors along `φ` and `θ` when those are separate axes.
 """
-@inline function tmoments(data, theta, phi, energy, sc_pot = 0, magf = nothing; tdim = ndims(data), edim = 1, kw...)
-    nt = size(data, tdim)
-    # After removing tdim, edim shifts down by 1 if it was after tdim
-    edim_slice = edim > tdim ? edim - 1 : edim
+struct EnergyAngleGrid{E, P, T, DE, DP, DT}
+    energy::E
+    phi::P
+    theta::T
+    denergy::DE
+    dphi::DP
+    dtheta::DT
+end
 
-    moment_at(i) = let disti = (; data = selectdim(data, tdim, i), theta = _vector(theta, i), phi = _vector(phi, i), energy = _vector(energy, i))
-        plasma_moments(disti, _scalar(sc_pot, i), _vector(magf, i); edim = edim_slice, kw...)
+EnergyAngleGrid(energy, phi, theta; denergy = nothing, dphi = nothing, dtheta = nothing) =
+    EnergyAngleGrid(energy, phi, theta, denergy, dphi, dtheta)
+
+"""
+    plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, edim = 1)
+
+Moments of one distribution `data` on `grid`.
+
+- `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_km` [s³/km⁶] or `:df_cm` [s³/cm⁶].
+- `species` is `:H`, `:He` (α), `:O` (O⁺), `:e`, or any object with `mass` [proton masses] and `charge` [e].
+- `sc_pot` [V] shifts energies by `charge * sc_pot`.
+- Output NamedTuple is CGS with energies in eV: `density` [cm⁻³], `velocity`, `vthermal` [cm/s], `flux` [cm⁻² s⁻¹],
+  `eflux`, `qflux` [eV cm⁻² s⁻¹], `mftens`, `ptens` [eV cm⁻³] as `(xx, yy, zz, xy, xz, yz)`, `ttens`, `avgtemp`, `t3` [eV].
+- With field `B`, adds `magt3` [eV] `(⊥, ⊥, ∥)` and the symmetry axis `symm` with `symm_theta`, `symm_phi`, `symm_ang` [deg].
+"""
+function plasma_moments(data, grid::EnergyAngleGrid; species, units, sc_pot = 0, B = nothing, edim = 1)
+    (; mass, charge) = _species(species)
+    coefficient, E_exp = _conversion_coeff(units, :eflux, mass)
+    return _plasma_moments(data, grid, sc_pot, B; coefficient, E_exp, mass = mass * PROTON_MASS, charge, edim)
+end
+
+"""
+    tmoments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = ndims(data), edim = 1)::StructArray
+
+Plasma moments of each slice of `data` along its time axis `tdim`.
+`edim` indexes the axes of `data` including time. Align ancillary measurements to the scan intervals before calling.
+`grid`, `sc_pot` and `B` are a vector with one value per time, or, for `grid` and `sc_pot`, one value for all times.
+"""
+function tmoments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = ndims(data), edim = 1)
+    1 <= tdim <= ndims(data) && 1 <= edim <= ndims(data) && tdim != edim ||
+        throw(ArgumentError("tdim and edim must be distinct data axes"))
+    nt = size(data, tdim)
+    nt > 0 || throw(ArgumentError("tmoments needs at least one scan"))
+    grid isa EnergyAngleGrid || _check_series(grid, nt, "grid")
+    sc_pot isa Number || _check_series(sc_pot, nt, "sc_pot")
+    if !isnothing(B)
+        _check_series(B, nt, "B")
+        all(b -> (b isa AbstractVector || b isa Tuple) && length(b) == 3, B) ||
+            throw(DimensionMismatch("B needs one three-component field vector per scan"))
     end
+    edim_slice = edim > tdim ? edim - 1 : edim
+    moment_at(i) = plasma_moments(
+        selectdim(data, tdim, i), _at(grid, i);
+        sc_pot = _at(sc_pot, i), B = _at(B, i), edim = edim_slice, species, units
+    )
     first_result = moment_at(1)
     result = StructArray{typeof(first_result)}(undef, nt)
     result[1] = first_result
@@ -31,34 +80,38 @@ Plasma moments of each slice of `data` along its time axis `tdim`, as a `StructA
     return result
 end
 
-"""
-    plasma_moments(dist, sc_pot = 0, magf = nothing; species, units = :eflux, edim = 1)
-
-Moments of one distribution on an energy-angle grid, as a `NamedTuple`; field-aligned quantities are added when `magf` is given.
-
-- `dist` has fields `data`, `energy` [eV], `theta`, `phi` [deg], and optionally the bin widths `denergy`, `dtheta`, `dphi`, otherwise estimated from the centers.
-- `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_km` [s³/km⁶] or `:df_cm` [s³/cm⁶].
-  Its energy axis is `edim`, and its other axes are a flattened angle axis or `(φ, θ)`.
-- `energy`, `denergy` are vectors along energy or arrays shaped like `data`.
-  Angle arrays are shaped like the angle axes of `data`, or are vectors along `φ` and `θ` when those are separate axes.
-- `species` (`:H`, `:He`, `:O`, `:e`) sets the mass, charge and unit-conversion factor.
-- `sc_pot` [V] shifts energies by `charge * sc_pot`; positive repels ions.
-"""
-@inline function plasma_moments(dist, scpot = 0, magf = nothing; species, units = :eflux, edim = 1, kw...)
-    s = species_info(species)
-    dtheta = get(dist, :dtheta, nothing)
-    dphi = get(dist, :dphi, nothing)
-    dE = get(dist, :denergy, nothing)
-    c, E_exp = _conversion_coeff(units, :eflux, s.A)
-    return _plasma_moments(dist.data, dist.theta, dist.phi, dist.energy, scpot, magf; coefficient = c, E_exp, mass = s.mass, charge = s.charge, dtheta, dphi, dE, edim, kw...)
+function _check_series(x, nt, name)
+    x isa AbstractVector && axes(x, 1) == Base.OneTo(nt) ||
+        throw(DimensionMismatch("$name needs one entry for each of $nt scans"))
 end
+
+_at(x, i) = x
+_at(x::AbstractVector, i) = x[i]
 
 _osize(data, dim) = ntuple(i -> size(data, i < dim ? i : i + 1), ndims(data) - 1)
 
-@inline function _plasma_moments(data, theta, phi, _energy, sc_pot, magf; coefficient = 1.0, E_exp = 0, mass, charge, dtheta = nothing, dphi = nothing, dE = nothing, edim = 1)
+_check_coordinate(::Union{Nothing, Real}, n, dims) = nothing
+function _check_coordinate(x, n, dims)
+    size(x) in ((n,), dims) || throw(DimensionMismatch("grid coordinate has shape $(size(x)); expected ($n,) or $dims"))
+end
+
+function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, charge, edim)
+    (; theta, phi) = grid
+    _energy = grid.energy
     T = eltype(data)
-    edims = size(_energy)
+    1 <= edim <= ndims(data) || throw(ArgumentError("edim must be a data axis"))
+    ndims(data) in (2, 3) || throw(DimensionMismatch("expected one energy and one or two angle axes"))
+    ne = size(data, edim)
+    _check_coordinate(_energy, ne, size(data))
+    _check_coordinate(grid.denergy, ne, size(data))
+    edims = isnothing(grid.denergy) || ndims(grid.denergy) <= 1 ? size(_energy) : size(grid.denergy)
+    eshape = ntuple(i -> i == edim ? ne : 1, ndims(data))
+    energy_input = ndims(_energy) == 1 && length(edims) > 1 ? reshape(_energy, eshape) : _energy
     adims = _osize(data, edim)   # angle-only dimensions (everything after energy)
+    _check_coordinate(phi, first(adims), adims)
+    _check_coordinate(theta, last(adims), adims)
+    _check_coordinate(grid.dphi, first(adims), adims)
+    _check_coordinate(grid.dtheta, last(adims), adims)
     thetadims = size(theta)
     phidims = size(phi)
     ΔU = T(charge * sc_pot)
@@ -68,17 +121,23 @@ _osize(data, dim) = ntuple(i -> size(data, i < dim ? i : i + 1), ndims(data) - 1
         energy = @alloc(T, edims...)
         e_inf = @alloc(T, edims...)
         v_inf = @alloc(T, edims...)
-        dtheta = @something(dtheta, _bin_widths!(@alloc(T, thetadims...), theta))
-        dphi = @something(dphi, _bin_widths!(@alloc(T, phidims...), phi, 360))
+        dtheta = @something(grid.dtheta, _axis_widths!(@alloc(T, thetadims...), theta, length(adims), nothing))
+        dphi = @something(grid.dphi, _axis_widths!(@alloc(T, phidims...), phi, 1, 360))
         Omega = @alloc(T, 10, adims...) # Omega weights: angle-only (no energy axis)
 
-        @. energy = _clean_energy(_energy)
-        dE = @something(dE, _compute_denergy!(@alloc(T, edims...), energy))
+        @. energy = _clean_energy(energy_input)
+        dE = if isnothing(grid.denergy)
+            _axis_widths!(@alloc(T, edims...), energy, edim, nothing)
+        elseif ndims(grid.denergy) == 1 && length(edims) > 1
+            reshape(grid.denergy, eshape)
+        else
+            grid.denergy
+        end
 
         omega_weights!(Omega, theta, phi, dtheta, dphi)
 
         # Common derived arrays
-        @. Escale = coefficient * dE * _weight(energy, dE, ΔU) * energy^(E_exp - 2)
+        @. Escale = coefficient * dE * _weight(energy, T(dE), ΔU) * energy^(E_exp - 2)
         @. e_inf = max(energy + ΔU, zero(T))
         _den, flux, _mftens, eflux = compute_fused_moments(data, Escale, e_inf, Omega; edim)
         density = sqrt(mass / 2) * _den

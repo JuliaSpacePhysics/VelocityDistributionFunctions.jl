@@ -84,7 +84,7 @@ function compute_pressure_tensor(mftens, velocity, flux, mass)
 end
 
 """
-    compute_temperature(ptens, density, mass) -> NamedTuple
+    compute_temperature(ptens, density, mass) -> (; ttens, avgtemp, vthermal, t3, t3evec)
 
 Temperature quantities from the pressure tensor.
 
@@ -92,8 +92,6 @@ Eigenvalue decomposition of ``\\mathbf{T}`` yields three temperature eigenvalues
 ``(T_1, T_2, T_3)`` sorted by the SPEDAS heuristic:
 the eigenvalue whose removal makes the remaining two most similar is assigned
 to slot 3.
-
-Returns `(; ttens, avgtemp, vthermal, t3, t3evec)`.
 """
 function compute_temperature(ptens::SVector{6, T}, density, mass) where {T}
     pt3x3 = SMatrix{3, 3, T}(
@@ -112,7 +110,7 @@ function compute_temperature(ptens::SVector{6, T}, density, mass) where {T}
 end
 
 """
-    compute_field_aligned(ttens, t3evec, velocity, magf)
+    compute_field_aligned(ttens, t3evec, velocity, magf) -> (; magt3, symm, symm_theta, symm_phi, symm_ang)
 
 Field-aligned temperature decomposition and symmetry analysis.
 
@@ -133,8 +131,6 @@ The symmetry axis is the eigenvector closest to ``\\mathbf{B}``
 ```math
 \\alpha = \\arccos|\\hat{B} \\cdot \\hat{e}_\\parallel|
 ```
-
-Returns `(; magt3, symm, symm_theta, symm_phi, symm_ang)`.
 """
 function compute_field_aligned(ttens, t3evec, velocity, magf)
     T = eltype(ttens)
