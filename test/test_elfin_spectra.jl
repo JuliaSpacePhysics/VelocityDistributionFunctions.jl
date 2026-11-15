@@ -1,6 +1,6 @@
 using Test
 using VelocityDistributionFunctions
-using VelocityDistributionFunctions: directional_energy_spectra, PAspectra, sort_flux_by_pitch_angle!
+using VelocityDistributionFunctions: directional_energy_spectra, pitch_angle_spectra, sort_flux_by_pitch_angle!
 
 include(joinpath(@__DIR__, "fixtures/elfin_helpers.jl"))
 
@@ -33,10 +33,10 @@ end
         @test res.omni[:, 1] ≈ OMNI_T1
     end
 
-    @testset "PAspectra" begin
+    @testset "pitch_angle_spectra" begin
         S2 = copy(S)
         sort_flux_by_pitch_angle!(S2, pa)
-        pas = PAspectra(S2, ELFIN_EPD_dE, ELFIN_PA_CHANNELS...)
+        pas = pitch_angle_spectra(S2, ELFIN_EPD_dE, ELFIN_PA_CHANNELS...)
         @test length(pas) == 4
         @test size(pas[1]) == (10, 1)
         @test isapprox_with_nan(pas[1][:, 1], PA_CH0_T1)

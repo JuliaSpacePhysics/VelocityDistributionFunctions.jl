@@ -1,5 +1,5 @@
 """
-    sort_flux_by_pitch_angle(flux, pitch_angle)
+    sort_flux_by_pitch_angle!(flux, pitch_angle; sort_on_reverse = true)
 
 Sort flux by pitch angle into ascending order. Set `sort_on_reverse` to true to sort only if the pitch angle is in reverse order.
 """

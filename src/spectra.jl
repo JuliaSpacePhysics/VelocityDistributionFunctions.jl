@@ -5,10 +5,11 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
 
 
 """
-    directional_energy_spectra(spec_data, time_var, pitch_angles, loss_cone; para_tol=22.25, anti_tol=22.25)
+    directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
 
-Process 3D spectral data (pitch_angle × energy × time) to extract directional flux spectra.
-This implements the same logic as pyspedas epd_l2_Espectra function.
+Port of PySPEDAS `epd_l2_Espectra`: solid-angle-weighted means of `S[pitch, energy, time]` over pitch angles in each
+direction (see `is_parallel`), skipping `NaN`. Sectors of half width `half_sector_width` [deg] are weighted by
+`2Δθ sin(pitch)`, or `Δθ sin Δθ` within `half_sector_width` of 0° or 180°. `para_tol` applies to both field-aligned directions.
 """
 function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
     n_pa, n_E, n_t = size(S)
@@ -68,16 +69,16 @@ function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_widt
     end
 end
 
-function PAspectra(S, dE, min_channels, max_channels)
+function pitch_angle_spectra(S, dE, min_channels, max_channels)
     n_pa, _, n_time = size(S)
     T = promote_type(eltype(S), eltype(dE))
     # Allocate working arrays for this energy range
     numerator = similar(S, T, n_pa, n_time)
     denominator = similar(S, T, n_pa, n_time)
-    return PAspectra!(S, dE, min_channels, max_channels, numerator, denominator)
+    return pitch_angle_spectra!(S, dE, min_channels, max_channels, numerator, denominator)
 end
 
-function PAspectra!(S, dE, min_channels, max_channels, numerator, denominator)
+function pitch_angle_spectra!(S, dE, min_channels, max_channels, numerator, denominator)
     return map(min_channels, max_channels) do min_ch, max_ch
         _pa_kernel!(numerator, denominator, S, dE, min_ch, max_ch)
         numerator ./ denominator
