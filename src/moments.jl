@@ -129,27 +129,25 @@ end
 
 function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, charge)
     (; energy, denergy, phi, dphi, theta, dtheta) = grid
-    T = eltype(data)
+    # At least Float64: central moments are differences of lab-frame moments, amplifying rounding by
+    # |mftens|/|ptens| and |eflux|/|qflux| (~10² and ~10⁵ in the solar wind).
+    T = promote_type(eltype(data), Float64)
     eshape = _bshape(data, energy, denergy)
     θshape, φshape = _bshape(data, theta, dtheta), _bshape(data, phi, dphi)
     ashape = map(max, θshape, φshape)
     cells = _cells(ashape, data)
     ΔU = T(charge * sc_pot)
-    A = float(promote_type(eltype(theta), eltype(dtheta), eltype(phi), eltype(dphi)))
+    A = promote_type(eltype(theta), eltype(dtheta), eltype(phi), eltype(dphi), Float64)
 
     return @no_escape begin
-        # Per angle cell: solid-angle weights `omega` and unit velocity direction `ehat`, as products of θ and φ factors.
-        θf = @alloc(NTuple{8, A}, θshape...)
-        φf = @alloc(NTuple{8, A}, φshape...)
+        θf = @alloc(NTuple{6, A}, θshape...)
+        φf = @alloc(NTuple{6, A}, φshape...)
         omega = @alloc(NTuple{10, A}, ashape...)
-        ehat = @alloc(SVector{3, A}, ashape...)
         @. θf = _theta_factors(A(theta), A(dtheta))
         @. φf = _phi_factors(A(phi), A(dphi))
         @. omega = _omega(θf, φf)
-        @. ehat = _ehat(θf, φf)
         Escale = @alloc(T, eshape...)
         e_inf = @alloc(T, eshape...)
-        v_inf = @alloc(T, eshape...)
 
         @. Escale = _energy_scale(T(energy), T(denergy), ΔU, coefficient, E_exp)
         @. e_inf = max(_clean_energy(T(energy)) + ΔU, zero(T))
@@ -158,8 +156,7 @@ function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, cha
         mftens = _mftens .* T(sqrt(2 * mass))
         velocity = flux ./ density
 
-        @. v_inf = sqrt(2 / mass * e_inf)
-        qflux = compute_heat_flux(data, omega, ehat, v_inf, Escale, mass, velocity, cells)
+        qflux = compute_heat_flux(eflux, mftens, velocity, density, mass)
         ptens = compute_pressure_tensor(mftens, velocity, flux, mass)
         temp = compute_temperature(ptens, density, mass)
 

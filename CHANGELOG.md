@@ -12,6 +12,7 @@
   - `tmoments(data, theta, phi, energy, sc_pot, magf; kw...)` → `tmoments(data, grid; sc_pot, B, kw...)`. Time-varying inputs are vectors with one value per time instead of time-first matrices, e.g. `grid = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout)`, `B = eachrow(magf)`.
   - `edim` is replaced by the grid's `layout`, naming the axes of one scan, e.g. `layout = (:phi, :theta, :energy)`.
   - Bin widths of a flattened angle axis must be supplied; the estimate was wrong.
+- **Breaking**: `qflux` integrates each bin's solid angle exactly instead of evaluating at bin centers as SPEDAS does; for MMS FPI ions it differs from SPEDAS by up to 2%. Moments are at least `Float64`.
 
 ### Removed
 

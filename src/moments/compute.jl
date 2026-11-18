@@ -34,34 +34,18 @@
     return den, flux, mftens, eflux
 end
 
-@muladd function compute_heat_flux(data, Omega, ehat, v_inf, Escale, mass, velocity, cells)
-    T = Base.promote_eltype(data, eltype(Omega), v_inf, velocity)
-    q = zero(SVector{3, T})
-    eshape = size(v_inf)
-    @inbounds for (J, members) in cells
-        e = ehat[J]
-        q0 = zero(SVector{3, T})
-        for I in members
-            ie = _project(I, eshape)
-            vi = v_inf[ie]
-            w = vi * e - velocity
-            c = (w ⋅ w) * vi * data[I] * Escale[ie]
-            q0 = c * w + q0
-        end
-        q = q0 * Omega[J][1] + q
-    end
-    return q * T(mass / 2 * mass / 2)
+# Heat flux q = (m/2)∫|v - u|²(v - u) f d³v expanded in the lab-frame moments
+function compute_heat_flux(eflux, mftens, velocity, density, mass)
+    M = _symmetric(mftens)
+    u = velocity
+    return eflux - M * u - tr(M) / 2 * u + mass * density * (u ⋅ u) * u
 end
 
+# 3×3 matrix of a symmetric tensor stored as (xx, yy, zz, xy, xz, yz)
+_symmetric(t) = SMatrix{3, 3}(t[1], t[4], t[5], t[4], t[2], t[6], t[5], t[6], t[3])
 
 function compute_pressure_tensor(mftens, velocity, flux, mass)
-    T = eltype(mftens)
-    mf3x3 = SMatrix{3, 3, T}(
-        mftens[1], mftens[4], mftens[5],
-        mftens[4], mftens[2], mftens[6],
-        mftens[5], mftens[6], mftens[3]
-    )
-    pt3x3 = mf3x3 - (velocity * flux') .* mass
+    pt3x3 = _symmetric(mftens) - (velocity * flux') .* mass
     ptens = SA[pt3x3[1, 1], pt3x3[2, 2], pt3x3[3, 3], pt3x3[1, 2], pt3x3[1, 3], pt3x3[2, 3]]
     return ptens
 end

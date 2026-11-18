@@ -9,15 +9,13 @@
 # | 5–10  | ∫ ê ê dΩ, (xx, yy, zz, xy, xz, yz)      | momentum flux tensor  |
 #
 # Each weight is a θ integral times a φ integral, so `_theta_factors` and `_phi_factors` evaluate the trig
-# once per θ and per φ bin and `_omega` combines them per cell. The last two factors are sin and cos of the
-# bin center, giving the unit velocity direction `_ehat`.
+# once per θ and per φ bin and `_omega` combines them per cell.
 omega_weightsd(th, ph, dth, dph) = _omega(_theta_factors(th, dth), _phi_factors(ph, dph))
 
 function _theta_factors(th, dth)
     th, dth = deg2rad(th), deg2rad(dth)
     st1, ct1 = sincos(th - dth / 2)
     st2, ct2 = sincos(th + dth / 2)
-    st, ct = sincos(th)
     it = ct1 - ct2                                   # ∫ sinθ
     it_zz = (ct1^3 - ct2^3) / 3                      # ∫ sinθ cos²θ
     return (
@@ -27,7 +25,6 @@ function _theta_factors(th, dth)
         it - it_zz,                                  # ∫ sin³θ
         it_zz,
         (st2^3 - st1^3) / 3,                         # ∫ sin²θ cosθ
-        st, ct,
     )
 end
 
@@ -35,7 +32,6 @@ function _phi_factors(ph, dph)
     ph, dph = deg2rad(ph), deg2rad(dph)
     sp1, cp1 = sincos(ph - dph / 2)
     sp2, cp2 = sincos(ph + dph / 2)
-    sp, cp = sincos(ph)
     h = (sp2 * cp2 - sp1 * cp1) / 2
     return (
         dph,                                         # ∫ 1
@@ -44,7 +40,6 @@ function _phi_factors(ph, dph)
         dph / 2 + h,                                 # ∫ cos²φ
         dph / 2 - h,                                 # ∫ sin²φ
         (sp2^2 - sp1^2) / 2,                         # ∫ sinφ cosφ
-        sp, cp,
     )
 end
 
@@ -56,5 +51,3 @@ function _omega(t, p)
         it_xx * ip_xx, it_xx * ip_yy, it_zz * dph, it_xx * ip_xy, it_xz * ip_x, it_xz * ip_y,
     )
 end
-
-_ehat(t, p) = SA[t[7] * p[8], t[7] * p[7], t[8]]

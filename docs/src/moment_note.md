@@ -2,13 +2,24 @@
 
 This note defines the quantities used in moment calculations.
 
-Here we assume that (1) the look direction (angle) of a bin does not depend on energy; (2) the spacecraft potential only changes the particle’s speed/energy, not its direction, i.e. no electrostatic lensing/trajectory bending. So the the measured look direction $\hat{\mathbf e}(\Omega)$ is unchanged when mapping to $\mathbf v_\infty$ via
+Here we assume that (1) the look direction (angle) of a bin does not depend on energy; (2) the spacecraft potential only changes the particle’s speed/energy, not its direction, i.e. no electrostatic lensing/trajectory bending. So the measured velocity direction $\hat{\mathbf e}(\Omega)$ is unchanged when mapping to $\mathbf v_\infty$ via
 $\mathbf v_\infty = \sqrt{2E_\infty/m}\,\hat{\mathbf e}(\Omega)$.
 
 Since $E_\infty = E + q\Phi_{sc}$, we have $dE_\infty = dE$.
 
 ```math
 d^3v_\infty = \sqrt{\frac{2E_\infty}{m^3}}\, dE_\infty\, d\Omega_\infty = \sqrt{\frac{2E_\infty}{m^3}}\, dE\, d\Omega.
+```
+
+## Angular weights
+
+Each angle bin $i$ is the patch $\theta_i \pm \Delta\theta_i/2$, $\phi_i \pm \Delta\phi_i/2$, on which $f_E$ is taken constant.
+The angular factors in the sums below are exact integrals over the patch:
+
+```math
+\Delta\Omega_i = \int_i d\Omega, \qquad
+\Omega_{j,i} = \int_i \hat e_j\, d\Omega, \qquad
+\Omega_{jk,i} = \int_i \hat e_j \hat e_k\, d\Omega.
 ```
 
 ## Number density
@@ -80,11 +91,11 @@ F_j = \int \left(\sqrt{\frac{2E_\infty}{m}}\, \hat e_j\right)
 After discretization in energy and angle, this becomes
 
 ```math
-F_j = \sum_i f_{E,i}\, a_i\, \frac{\Delta E_i}{E_i ^2}\, E_{\infty,i}\; \hat e_{j,i}\, Δ \Omega_i
+F_j = \sum_i f_{E,i}\, a_i\, \frac{\Delta E_i}{E_i ^2}\, E_{\infty,i}\; \Omega_{j,i}
 \qquad j \in \{x,y,z\}
 ```
 
-Compared to density, the integrand acquires one extra factor of $E_\infty/E$ and uses the directional solid-angle weights.
+Compared to density, the integrand acquires one extra factor of $E_\infty/E$, and $\Omega_{j,i}$ replaces $\Delta\Omega_i$.
 
 ## Energy flux
 
@@ -105,7 +116,7 @@ F_{E,j} = \int f_E\, \frac{E_\infty^2}{E^2}\, \hat e_j\, dE\, d\Omega.
 After discretization in energy and angle,
 
 ```math
-F_{E,j} = \sum_i f_{E,i}\, a_i\, \frac{\Delta E_i}{E_i^2}\, E_{\infty,i}^2\; \hat e_{j,i}\, Δ\Omega_i,
+F_{E,j} = \sum_i f_{E,i}\, a_i\, \frac{\Delta E_i}{E_i^2}\, E_{\infty,i}^2\; \Omega_{j,i},
 \qquad j \in \{x,y,z\}.
 ```
 
@@ -128,8 +139,7 @@ Using the relation between (1) $f$ and $f_E$, (2) $d^3v_\infty$ and $dE\ d\Omega
 = \sqrt{2 m} \int f_E \, \frac{E_\infty^{3/2}}{E^2}\, \hat e_j\,\hat e_k\, dE\, d\Omega.
 ```
 
-After discretization in energy and angle, and defining
-$\Omega_{jk,i} \equiv \hat e_{j,i}\,\hat e_{k,i}\, Δ\Omega_i$, this becomes
+After discretization in energy and angle, this becomes
 
 ```math
 \mathrm{MF}_{jk} = \sqrt{2 m}\sum_i
@@ -159,21 +169,14 @@ velocity $\mathbf w_\infty \equiv \mathbf v_\infty - \mathbf V$:
 q_j = \int \tfrac{1}{2} m\,|\mathbf v_\infty - \mathbf V|^2\,(v_{\infty,j} - V_j)\, f(\mathbf v_\infty)\, d^3v_\infty.
 ```
 
-Here $\mathbf V$ is the bulk velocity ($\mathbf V = \mathbf F/n$) and the thermal energy per bin is defined as the kinetic energy in the bulk-flow frame: $E_\mathrm{th}(E,\Omega) \equiv \tfrac{1}{2} m\, |\mathbf w_\infty|^2.$
-
-The heat flux vector is
-
-```math
-q_j = \int E_\mathrm{th}\, w_{\infty,j}\, f(\mathbf v_\infty)\, d^3v_\infty
-= \sqrt{\frac{m}{2}}\int
-f_E\, E_\mathrm{th}\, w_{\infty,j}
-\frac{\sqrt{E_\infty}}{E^2}\, dE\, d\Omega.
-```
-
-After discretization in energy and angle,
+Here $\mathbf V = \mathbf F/n$ is the bulk velocity. Expanding $|\mathbf w|^2\mathbf w$ with $\mathbf w = \mathbf v_\infty - \mathbf V$
+and integrating term by term expresses $\mathbf q$ through the lab-frame moments above:
 
 ```math
-q_j = \sqrt{\frac{m}{2}}\sum_i
-f_{E,i}\, a_i\, \frac{\Delta E_i}{E_i^2}\, E_{\mathrm{th},i}\, w_{\infty,j,i}\, \sqrt{E_{\infty,i}}\; Δ \Omega_i
-\qquad j \in \{x,y,z\}.
+\mathbf q = \mathbf F_E - \mathrm{MF}\,\mathbf V - \tfrac{1}{2}\operatorname{tr}(\mathrm{MF})\,\mathbf V + m\,n\,|\mathbf V|^2\,\mathbf V,
 ```
+
+using $\mathbf F_E = \int \tfrac12 m |\mathbf v_\infty|^2 \mathbf v_\infty f\, d^3v_\infty$ and $\mathbf F = n\mathbf V$.
+Each term is integrated exactly over the bins, so $\mathbf q$ is too.
+SPEDAS instead evaluates $|\mathbf w|^2\mathbf w$ at bin centers, which is off by $O(\Delta\theta^2, \Delta\phi^2)$
+and fails for wide bins such as a full-circle $\phi$ bin.
