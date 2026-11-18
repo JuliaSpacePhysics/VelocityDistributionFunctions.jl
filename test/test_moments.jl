@@ -7,7 +7,7 @@ using PlasmaPopulations: Particle
 
 include("utils.jl")
 
-const ref_url = "https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/releases/download/v0.2.1/pyspedas_mms_fpi_brst_i.jld2"
+const ref_url = "https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/releases/download/v0.2.1/pyspedas_mms_fpi_brst_i_v2.jld2"
 
 @testset "_bin_widths" begin
     @test _bin_widths([0.0, 10.0, 20.0, 30.0], 1) ≈ [10, 10, 10, 10]
