@@ -25,13 +25,12 @@ end
 
 function _safe_eigen(A)
     T = eltype(A)
-    try
-        vals, vecs = eigen(A)
-        return SVector{3, T}(vals), SMatrix{3, 3, T}(vecs)
-    catch
+    if !all(isfinite, A)
         nan = T(NaN)
         return SA[nan, nan, nan], @SMatrix fill(nan, 3, 3)
     end
+    vals, vecs = eigen(A)
+    return SVector{3, T}(vals), SMatrix{3, 3, T}(vecs)
 end
 
 function _temp_sort(eig)

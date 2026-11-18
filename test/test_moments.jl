@@ -65,6 +65,10 @@ end
 
     @test same(plasma_moments(permutedims(data, (3, 1, 2)), EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta), denergy = widths); kw...))
     @test same(plasma_moments(reverse(data; dims = 3), EnergyAngleGrid(reverse(energy), phi, theta; layout, denergy = reverse(widths)); kw...))
+    gappy, zeroed = copy(data), copy(data)
+    gappy[2, 2, 2], zeroed[2, 2, 2] = NaN, 0
+    @test plasma_moments(gappy, grid; kw...) == plasma_moments(zeroed, grid; kw...)
+    @test all(x -> all(isnan, x), plasma_moments(fill(NaN, size(data)), grid; B = [1.0, 2, 3], kw...))
     full(x) = x .* ones(size(data))
     (; dphi, dtheta) = grid
     @test same(plasma_moments(data, EnergyAngleGrid(full(grid.energy), full(grid.phi), full(grid.theta); layout, denergy = full(grid.denergy), dphi = full(dphi), dtheta = full(dtheta)); kw...))

@@ -2,7 +2,8 @@
 # Individual moment computations
 # ============================================================================
 
-# Fused sums for density (1), flux (3), mftens (6) and eflux (3). Energy sums per angle cell are weighted once by its `Omega`.
+# Fused sums for density (1), flux (3), mftens (6) and eflux (3)
+# Energy sums per angle cell are weighted once by its `Omega`.
 @muladd function compute_fused_moments(data, Escale, e_inf, Omega, cells)
     T = Base.promote_eltype(data, e_inf, eltype(Omega))
     den = zero(T)
@@ -16,7 +17,8 @@
             ie = _project(I, eshape)
             einf = e_inf[ie]
             sqrteinf = sqrt(einf)
-            fk = data[I] * Escale[ie]
+            d = data[I]
+            fk = ifelse(isfinite(d), d, zero(d)) * Escale[ie]
             fk_einf = fk * einf
             sd = fk * sqrteinf + sd
             sf += fk_einf
@@ -31,7 +33,9 @@
         eflux = se * ωj + eflux
         mftens = sm * ωij + mftens
     end
-    return den, flux, mftens, eflux
+    sums = (den, flux, mftens, eflux)
+    any(isfinite, data) && return sums
+    return map(x -> x * T(NaN), sums)
 end
 
 # Heat flux q = (m/2)∫|v - u|²(v - u) f d³v expanded in the lab-frame moments
