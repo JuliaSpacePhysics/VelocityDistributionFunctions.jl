@@ -22,6 +22,7 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 | `EnergyAngleGrid(energy, phi, theta; layout, denergy, dphi, dtheta)` | spherical velocity-space grid; `layout` names the data axes, e.g. `(:phi, :theta, :energy)` |
 | `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)` | moments of one distribution; field-aligned quantities when `B` is given |
 | `tmoments(data, grid; species, units, sc_pot, B, tdim = ndims(data))` | `plasma_moments` per time slice, as a `StructArray`; vector arguments give one value per time |
+| `convert_flux_units(data, energy, from => to; species = nothing)` | `data` converted between the `units` of `plasma_moments`; `energy` [eV] broadcasts against `data`; `species` is required between flux and phase-space density |
 | `directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)` | omni, parallel, antiparallel and perpendicular energy spectra `(; omni, para, anti, perp)` of `S[pitch, energy, time]` |
 | below | public, not exported |
 | `pitch_angle_spectra(S, dE, min_channels, max_channels)` | for each channel range `min_channels[i]:max_channels[i]`, the `dE`-weighted mean of `S[pitch, energy, time]` over energy, skipping non-finite values, as `[pitch, time]` |

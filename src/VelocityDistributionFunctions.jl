@@ -16,7 +16,7 @@ include("moments.jl")
 
 export pitch_angle_distribution, tpitch_angle_distribution
 export directional_energy_spectra
-export plasma_moments, tmoments, EnergyAngleGrid
+export plasma_moments, tmoments, EnergyAngleGrid, convert_flux_units
 
 @static if VERSION >= v"1.11.0-DEV.469"
     eval(Meta.parse("public pitch_angle_spectra"))

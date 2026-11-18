@@ -84,6 +84,16 @@ end
     @test_throws ArgumentError tmoments(series, grid; tdim = 5, kw...)
 end
 
+@testset "Unit conversion" begin
+    f, E = [1.0 2.0 3.0], [8.0 13.0 22.0]
+    mₑ = 510998.95 / 2.99792458e10^2  # eV/(cm/s)²
+    @test convert_flux_units(f, E, :df_cm => :df_km) ≈ 1.0e30 .* f
+    @test convert_flux_units(f, E, :df_cm => :df_m) ≈ 1.0e12 .* f
+    @test convert_flux_units(f, E, :flux => :eflux) ≈ f .* E
+    @test convert_flux_units(f, E, :df_cm => :flux; species = :e) ≈ 2E ./ mₑ^2 .* f
+    @test_throws ArgumentError convert_flux_units(f, E, :flux => :df_cm)
+end
+
 @testset "Gyrotropic grid" begin
     # One full-circle φ bin is exact: the same as 8 φ bins of a φ-independent distribution
     energy = [10.0, 30.0, 100.0, 300.0]

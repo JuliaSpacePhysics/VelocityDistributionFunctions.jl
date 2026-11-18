@@ -45,7 +45,7 @@ end
 
 Moments of one distribution `data` on `grid`.
 
-- `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_km` [s³/km⁶] or `:df_cm` [s³/cm⁶].
+- `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_cm` [s³/cm⁶], `:df_km` [s³/km⁶] or `:df_m` [s³/m⁶].
 - `species` is `:H`, `:He` (α), `:O` (¹⁶O⁺), `:e`, or a `PlasmaPopulations.Particle`.
 - `sc_pot` [V] shifts energies by `charge * sc_pot`.
 - Output NamedTuple is CGS with energies in eV: `density` [cm⁻³], `velocity`, `vthermal` [cm/s], `flux` [cm⁻² s⁻¹],
