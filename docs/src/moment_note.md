@@ -1,8 +1,8 @@
 # Moment calculations
 
-This note defines the quantities used in moment calculations.
-
-Here we assume that (1) the look direction (angle) of a bin does not depend on energy; (2) the spacecraft potential only changes the particle’s speed/energy, not its direction, i.e. no electrostatic lensing/trajectory bending. So the measured velocity direction $\hat{\mathbf e}(\Omega)$ is unchanged when mapping to $\mathbf v_\infty$ via
+The integration assumes each angular bin has the same velocity direction
+$\hat{\mathbf e}(\Omega)$ at every energy. Spacecraft potential changes the
+particle speed while preserving this direction, giving
 $\mathbf v_\infty = \sqrt{2E_\infty/m}\,\hat{\mathbf e}(\Omega)$.
 
 Since $E_\infty = E + q\Phi_{sc}$, we have $dE_\infty = dE$.
@@ -32,7 +32,7 @@ n = \int f(\mathbf v_∞) d^3v_\infty
 
 where $f(\mathbf v_∞)$ is the ambient phase-space distribution function.
 
-The **differential number flux**, which is measured by particle instruments, related to the velocity distribution by
+The **differential number flux**, which is measured by particle instruments, is related to the velocity distribution by
 
 ```math
 j(E,\Omega) dE d\Omega = v f(\mathbf v_∞) d^3v .

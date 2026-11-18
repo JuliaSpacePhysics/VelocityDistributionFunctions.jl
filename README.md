@@ -7,7 +7,7 @@ Analysis tools for particle velocity distribution functions (VDFs).
 
 **Installation**: at the Julia REPL, run `using Pkg; Pkg.add("VelocityDistributionFunctions")`
 
-Some functions provided here are intended to be used as building blocks for mission-specific particle distribution tools. Mission-specific wrappers will generally be needed to load the particle data to be operated on, perform calibration, sanitization, and other preliminary steps.
+Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt a calibrated particle distribution.
 
 ## Conventions
 
