@@ -2,72 +2,55 @@
 # Individual moment computations
 # ============================================================================
 
-# Fused weighted sums: compute flux (3), mftens (6), and eflux (3) in a single pass.
-# Avoids three separate broadcasts over fE_kernel and three separate _weighted_sum calls.
-@muladd function compute_fused_moments(fE_kernel, Etmp, e_inf, Omega; edim = 1)
-    T = Base.promote_eltype(fE_kernel, e_inf, Omega)
-    e1d = ndims(e_inf) == 1
+# Fused sums for density (1), flux (3), mftens (6) and eflux (3). Energy sums per angle cell are weighted once by its `Omega`.
+@muladd function compute_fused_moments(data, Escale, e_inf, Omega, cells)
+    T = Base.promote_eltype(data, e_inf, eltype(Omega))
     den = zero(T)
     flux = zero(SVector{3, T})
     mftens = zero(SVector{6, T})
     eflux = zero(SVector{3, T})
-    @inbounds for J in CartesianIndices(_osize(fE_kernel, edim))
-        sd, sf, sm, se = zero(T), zero(T), zero(T), zero(T)   # accumulator for e_inf^1, e_inf^1.5, e_inf^2
-        TJ = Tuple(J)
-        for ie in axes(fE_kernel, edim)
-            idx = _fullindex(ie, edim, TJ)
-            ei = e1d ? ie : idx
-            einf = e_inf[ei]
+    eshape = size(e_inf)
+    @inbounds for (J, members) in cells
+        sd, sf, sm, se = zero(T), zero(T), zero(T), zero(T)   # sums of e_inf^0.5, e_inf^1, e_inf^1.5, e_inf^2 terms
+        for I in members
+            ie = _project(I, eshape)
+            einf = e_inf[ie]
             sqrteinf = sqrt(einf)
-            fk = fE_kernel[idx] * Etmp[ei]
+            fk = data[I] * Escale[ie]
             fk_einf = fk * einf
             sd = fk * sqrteinf + sd
             sf += fk_einf
             sm = fk_einf * sqrteinf + sm
             se = fk_einf * einf + se
         end
-        ωj = SVector{3, T}(Omega[2, J], Omega[3, J], Omega[4, J])
-        ωij = SVector{6, T}(
-            Omega[5, J], Omega[6, J], Omega[7, J],
-            Omega[8, J], Omega[9, J], Omega[10, J]
-        )
-        den = den + sd * Omega[1, J]
-        flux = flux + sf * ωj
-        eflux = eflux + se * ωj
-        mftens = mftens + sm * ωij
+        ω = Omega[J]
+        ωj = SVector{3, T}(ω[2], ω[3], ω[4])
+        ωij = SVector{6, T}(ω[5], ω[6], ω[7], ω[8], ω[9], ω[10])
+        den = sd * ω[1] + den
+        flux = sf * ωj + flux
+        eflux = se * ωj + eflux
+        mftens = sm * ωij + mftens
     end
     return den, flux, mftens, eflux
 end
 
-function ehatd(th, ph)
-    sth, cth = sincosd(th)
-    sph, cph = sincosd(ph)
-    SA[sth * cph, sth * sph, cth]
-end
-
-@muladd function compute_heat_flux(fE_kernel, Omega, theta, phi, v_inf, tmp, mass, velocity; edim = 1)
-    T = Base.promote_eltype(fE_kernel, Omega, v_inf, velocity)
-    factor = T(mass / 2 * mass / 2)
+@muladd function compute_heat_flux(data, Omega, ehat, v_inf, Escale, mass, velocity, cells)
+    T = Base.promote_eltype(data, eltype(Omega), v_inf, velocity)
     q = zero(SVector{3, T})
-    is_1d = ndims(v_inf) == 1
-    # Outer loop over angle bins: compute trig once per angle
-    @inbounds for J in CartesianIndices(_osize(fE_kernel, edim))
-        ehat = ehatd(_theta(theta, J), _phi(phi, J))
-        # Inner loop over energy bins
+    eshape = size(v_inf)
+    @inbounds for (J, members) in cells
+        e = ehat[J]
         q0 = zero(SVector{3, T})
-        TJ = Tuple(J)
-        for ie in axes(fE_kernel, edim)
-            idx = _fullindex(ie, edim, TJ)
-            ei = is_1d ? ie : idx
-            vi = v_inf[ei]
-            w = vi * ehat - velocity
-            c = (w ⋅ w) * vi * fE_kernel[idx] * tmp[ei]
+        for I in members
+            ie = _project(I, eshape)
+            vi = v_inf[ie]
+            w = vi * e - velocity
+            c = (w ⋅ w) * vi * data[I] * Escale[ie]
             q0 = c * w + q0
         end
-        ω0 = Omega[1, J]
-        q = q0 * ω0 + q
+        q = q0 * Omega[J][1] + q
     end
-    return q * factor
+    return q * T(mass / 2 * mass / 2)
 end
 
 

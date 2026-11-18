@@ -10,12 +10,10 @@ include("utils.jl")
 const ref_url = "https://github.com/JuliaSpacePhysics/VelocityDistributionFunctions.jl/releases/download/v0.2.1/pyspedas_mms_fpi_brst_i.jld2"
 
 @testset "_bin_widths" begin
-    # Uniform spacing, no wrapping
-    @test _bin_widths([0.0, 10.0, 20.0, 30.0]) ≈ [10, 10, 10, 10]
-    # Non-uniform spacing
-    @test _bin_widths([0.0, 1.0, 4.0]) ≈ [1, 2, 3]
-    # Wrapped phi:
-    @test _bin_widths([180.0, 240.0, 300.0, 0.0, 60.0, 120.0], 360) ≈ [60, 60, 60, 60, 60, 60]
+    @test _bin_widths([0.0, 10.0, 20.0, 30.0], 1) ≈ [10, 10, 10, 10]
+    @test _bin_widths([0.0, 1.0, 4.0], 1) ≈ [1, 2, 3]
+    @test _bin_widths([180.0, 240.0, 300.0, 0.0, 60.0, 120.0], 1; period = 360) ≈ fill(60, 6)
+    @test _bin_widths([0 1; 2 3], 1) == [2 2; 2 2]
 end
 
 @testset "Cross-validation with PySPEDAS" begin
@@ -33,10 +31,11 @@ end
     theta = 180 .- mms1_dis_dist_brst["theta"]
     phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
     energy = mms1_dis_dist_brst["energy"]
-    grids = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta))
+    # data is [t, φ, θ, E]; φ and energy vary with time
+    grids = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout = (:phi, :theta, :energy))
     B = eachrow(mag_data)
-    moms = tmoments(data, grids; sc_pot = scpot_data, B, edim = 4, tdim = 1, units = :df_cm, species = :H)
-    @info @b tmoments($data, $grids; sc_pot = $scpot_data, B = $B, edim = 4, tdim = 1, units = :df_cm, species = :H)
+    moms = tmoments(data, grids; sc_pot = scpot_data, B, tdim = 1, units = :df_cm, species = :H)
+    @info @b tmoments($data, $grids; sc_pot = $scpot_data, B = $B, tdim = 1, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 1.0e-6
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 1.0e-6
@@ -48,34 +47,39 @@ end
     @test moms.magt3 ≈ eachrow(ref["magt3"]) rtol = 1.0e-6
     @test moms.symm_ang ≈ ref["symm_ang"] rtol = 1.0e-5
 
-    m1 = plasma_moments(selectdim(data, 1, 1), grids[1]; sc_pot = scpot_data[1], edim = 3, units = :df_cm, species = (; mass = 1, charge = 1))
+    m1 = plasma_moments(selectdim(data, 1, 1), grids[1]; sc_pot = scpot_data[1], units = :df_cm, species = (; mass = 1, charge = 1))
     @test m1.density ≈ moms.density[1]
 end
 
-@testset "Energy-last scan geometry" begin
+@testset "Grid layouts" begin
     phi = [10., 100., 210., 300.]
     theta = [35., 90., 145.]
     energy = [8., 13., 22.]
     widths = [5., 7., 9.]
-    data = reshape(Float32.(1:36), 4, 3, 3)
-    kw = (; units = :eflux, species = :H, edim = 3)
-    grid = EnergyAngleGrid(energy, phi, theta; denergy = widths)
+    data = reshape(collect(1.0:36), 4, 3, 3)  # [φ, θ, E]
+    kw = (; units = :eflux, species = :H)
+    layout = (:phi, :theta, :energy)
+    grid = EnergyAngleGrid(energy, phi, theta; layout, denergy = widths)
     expected = plasma_moments(data, grid; kw...)
-    efull = repeat(reshape(energy, 1, 1, :), 4, 3, 1)
-    wfull = repeat(reshape(widths, 1, 1, :), 4, 3, 1)
-    pfull = repeat(phi, 1, 3)
-    tfull = repeat(theta', 4)
-    for (e, w) in ((efull, nothing), (energy, wfull), (efull, widths))
-        actual = plasma_moments(data, EnergyAngleGrid(e, pfull, tfull; denergy = w); kw...)
-        @test actual.density ≈ expected.density
-        @test actual.velocity ≈ expected.velocity
-    end
-    reversed = plasma_moments(reverse(data; dims = 3), EnergyAngleGrid(reverse(energy), phi, theta); kw...)
-    @test reversed.density ≈ expected.density rtol = 4eps(Float32)
+    same(m) = m.density ≈ expected.density && m.velocity ≈ expected.velocity && m.ptens ≈ expected.ptens && m.qflux ≈ expected.qflux
+
+    @test same(plasma_moments(permutedims(data, (3, 1, 2)), EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta), denergy = widths); kw...))
+    @test same(plasma_moments(reverse(data; dims = 3), EnergyAngleGrid(reverse(energy), phi, theta; layout, denergy = reverse(widths)); kw...))
+    full(x) = x .* ones(size(data))
+    (; dphi, dtheta) = grid
+    @test same(plasma_moments(data, EnergyAngleGrid(full(grid.energy), full(grid.phi), full(grid.theta); layout, denergy = full(grid.denergy), dphi = full(dphi), dtheta = full(dtheta)); kw...))
+    # flattened angle axis: widths are not estimable from centers
+    flat(x) = vec(x .* ones(4, 3))
+    flat_layout = (:angle, :energy)
+    @test same(plasma_moments(reshape(data, 12, 3), EnergyAngleGrid(energy, flat(grid.phi), flat(grid.theta); layout = flat_layout, denergy = widths, dphi = flat(dphi), dtheta = flat(dtheta)); kw...))
+    @test_throws ArgumentError EnergyAngleGrid(energy, [0., 90, 180, 270], [45., 135, 45, 135]; layout = flat_layout)
+    @test_throws ArgumentError EnergyAngleGrid(energy, phi, theta; layout = (:phi, :energy))
+    @test_throws DimensionMismatch plasma_moments(data, EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta), denergy = widths); kw...)
+    @test_throws DimensionMismatch plasma_moments(reshape(data, 4, 3, 3, 1), grid; kw...)
     @test_throws UndefKeywordError plasma_moments(data, grid; species = :H)
     series = reshape(data, 4, 3, 3, 1)
     @test_throws DimensionMismatch tmoments(series, [grid, grid]; kw...)
     @test_throws DimensionMismatch tmoments(series, grid; sc_pot = Float64[], kw...)
     @test_throws DimensionMismatch tmoments(series, grid; B = [[1., 2.]], kw...)
-    @test_throws ArgumentError tmoments(series, grid; tdim = 3, kw...)
+    @test_throws ArgumentError tmoments(series, grid; tdim = 5, kw...)
 end

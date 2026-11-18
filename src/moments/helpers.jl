@@ -1,13 +1,18 @@
-# Build a CartesianIndex inserting `ie` at position `edim` among the other indices `J`.
-# e.g. _fullindex(3, 2, CartesianIndex(5,7)) → CartesianIndex(5,3,7)
-@inline function _fullindex(ie, edim, TJ::NTuple{N, Int}) where {N}
-    return CartesianIndex(_fullindex_tuple(ie, edim, TJ))
+# Broadcast indexing: data cell `I` reads cell `_project(I, shape)` of an array of padded size `shape` (see `_bshape`).
+@inline _project(I, shape) = CartesianIndex(map((i, s) -> s == 1 ? 1 : i, Tuple(I), shape))
+
+# `(J, members)` for each cell `J` of an array of padded size `shape`: the data cells that broadcast onto it.
+# Loops only over the axes the array lacks, which is faster than a padded `CartesianIndices`.
+function _cells(shape, data)
+    dims = Tuple(d for d in 1:ndims(data) if shape[d] == 1 && size(data, d) > 1)
+    group = CartesianIndices(map(d -> axes(data, d), dims))
+    return ((J, (_member(J, K, dims) for K in group)) for J in CartesianIndices(shape))
 end
 
-@inline function _fullindex_tuple(ie, edim, TJ::NTuple{N, Int}) where {N}
-    return ntuple(i -> i < edim ? TJ[i] : i == edim ? ie : TJ[i - 1], N + 1)
-end
-
+# `J` with its entries at `dims` replaced by those of `K`
+@inline _member(J, K, dims) = CartesianIndex(_setindices(Tuple(J), Tuple(K), dims))
+@inline _setindices(t, ::Tuple{}, ::Tuple{}) = t
+@inline _setindices(t, k, d) = _setindices(Base.setindex(t, first(k), first(d)), tail(k), tail(d))
 
 # Rotation matrix with z' along `v1`, y' along `v1 × v2`, x' completing the triad.
 # Matches SPEDAS `rot_mat`.
@@ -44,9 +49,8 @@ function _bin_difference(a, b, period)
     return d > period / 2 ? period - d : d
 end
 
-function _bin_widths!(dx, x, period = nothing)
+function _bin_widths!(dx, x, period)
     n = length(x)
-    n >= 2 || throw(ArgumentError("supply a bin width for a singleton axis"))
     @inbounds begin
         prev = _bin_difference(x[2], x[1], period)
         dx[1] = prev
@@ -57,16 +61,13 @@ function _bin_widths!(dx, x, period = nothing)
         end
         dx[n] = prev
     end
+    all(>(0), dx) || throw(ArgumentError("adjacent bin centers coincide; supply bin widths"))
     return dx
 end
 
-_axis_widths!(dx, x::AbstractVector, dim, period) = _bin_widths!(dx, x, period)
-function _axis_widths!(dx, x, dim, period)
-    for J in CartesianIndices(_osize(x, dim))
-        inds = _fullindex_tuple(Colon(), dim, Tuple(J))
-        _bin_widths!(view(dx, inds...), view(x, inds...), period)
-    end
+function _bin_widths(x::AbstractArray, dims; period = nothing)
+    dx = similar(x, float(eltype(x)))
+    other = filter(!=(dims), ntuple(identity, ndims(x)))
+    foreach((d, c) -> _bin_widths!(d, c, period), eachslice(dx; dims = other), eachslice(x; dims = other))
     return dx
 end
-
-_bin_widths(x, period = nothing) = _bin_widths!(similar(x), x, period)
