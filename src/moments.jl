@@ -37,6 +37,7 @@ function EnergyAngleGrid(energy, phi, theta; layout, denergy = nothing, dphi = n
     denergy = @something(place_energy(denergy), _grid_widths(energy, :energy, layout))
     dphi = @something(place_phi(dphi), _grid_widths(phi, :phi, layout; period = 360))
     dtheta = @something(place_theta(dtheta), _grid_widths(theta, :theta, layout))
+    _check_theta(theta, dtheta)
     return EnergyAngleGrid(energy, phi, theta, denergy, dphi, dtheta, layout)
 end
 
@@ -105,6 +106,15 @@ function _place(x::AbstractVector, names, layout)
     d = findfirst(in(names), layout)
     isnothing(d) && throw(ArgumentError("layout $layout has no $(join(names, " or ")) axis"))
     return reshape(x, ntuple(i -> i == d ? length(x) : 1, length(layout)))
+end
+
+function _check_theta(theta, dtheta)
+    tol = 180 * sqrt(eps(float(promote_type(eltype(theta), eltype(dtheta)))))
+    inside(θ, dθ) = -tol <= θ - dθ / 2 && θ + dθ / 2 <= 180 + tol
+    all(Broadcast.broadcasted(inside, theta, dtheta)) || throw(ArgumentError(
+        "theta bins θ ± dθ/2 must lie within [0, 180]: θ is the polar angle of the velocity direction"
+    ))
+    return nothing
 end
 
 # Only along the coordinate's own axis: centers of a flattened `:angle` axis are not ordered.

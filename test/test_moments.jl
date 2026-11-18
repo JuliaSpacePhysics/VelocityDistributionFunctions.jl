@@ -78,6 +78,8 @@ end
     @test same(plasma_moments(reshape(data, 12, 3), EnergyAngleGrid(energy, flat(grid.phi), flat(grid.theta); layout = flat_layout, denergy = widths, dphi = flat(dphi), dtheta = flat(dtheta)); kw...))
     @test_throws ArgumentError EnergyAngleGrid(energy, [0., 90, 180, 270], [45., 135, 45, 135]; layout = flat_layout)
     @test_throws ArgumentError EnergyAngleGrid(energy, phi, theta; layout = (:phi, :energy))
+    @test_throws ArgumentError EnergyAngleGrid(energy, phi, theta .- 90; layout)  # latitude
+    @test_throws ArgumentError EnergyAngleGrid(energy, phi, [5., 90., 170.]; layout, dtheta = 30)
     @test_throws DimensionMismatch plasma_moments(data, EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta), denergy = widths); kw...)
     @test_throws DimensionMismatch plasma_moments(reshape(data, 4, 3, 3, 1), grid; kw...)
     @test_throws UndefKeywordError plasma_moments(data, grid; species = :H)
