@@ -9,11 +9,11 @@ using StructArrays: StructArray
 
 include("unit_conversion.jl")
 include("spectra.jl")
-include("pad.jl")
 include("flux.jl")
 include("moments.jl")
+include("angles.jl")
 
-export pitch_angle_distribution, tpitch_angle_distribution
+export angle_distribution, omni_spectrum
 export directional_energy_spectra
 export plasma_moments, tmoments, EnergyAngleGrid, convert_flux_units
 
