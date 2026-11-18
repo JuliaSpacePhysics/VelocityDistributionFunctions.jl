@@ -27,22 +27,15 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 | below | public, not exported |
 | `pitch_angle_spectra(S, dE, min_channels, max_channels)` | for each channel range `min_channels[i]:max_channels[i]`, the `dE`-weighted mean of `S[pitch, energy, time]` over energy, skipping non-finite values, as `[pitch, time]` |
 
-## Features and Roadmap
+## Features
 
-- [ ] Fitting analytic distribution models (bi-Maxwellian, bi-kappa, …) to data
-- [x] Generate pitch-angle distributions (PADs) from VDFs
-    - [x] New PADs by averaging over multiple energy channels
-- [x] Generate directional flux spectra (omni-, parallel, antiparallel, and perpendicular directions) from PADs
+- [x] Pitch-angle distributions (PADs) from VDFs, and PADs averaged over energy channels
+- [x] Directional (omni, parallel, antiparallel, perpendicular) energy spectra from PADs
 - [ ] Energy/gyro-phase spectra
-- [x] Plasma moments (density, velocity, pressure, temperature, heat flux) from 3D distributions
-- [ ] Extend to simulation data
-- [ ] Volume visualization : scatter, volume, isosurface modes...
-- [ ] Dispersion analysis (see also [PlasmaWaves.jl](https://github.com/JuliaSpacePhysics/PlasmaWaves.jl))
-- [ ] Validation and Benchmarks
+- [x] Plasma moments (density, velocity, pressure, temperature, heat flux) from 3D distributions, cross-validated against PySPEDAS ([example](docs/src/moment_validation.md))
 
 ## Elsewhere
 
-- [plasmapy.distributions](https://docs.plasmapy.org/en/stable/formulary/distribution.html)
 - [ISEE_3D](https://earth-planets-space.springeropen.com/articles/10.1186/s40623-017-0761-9): Visualization tool for three-dimensional plasma velocity distributions
 - [Bulk Flow Velocity Changing Software - Lynn B. Wilson](https://wind.nasa.gov/docs/vbulk_change_documentation.pdf)
 - [SPEDAS Particle Tools Development Guide](https://spedas.org/presentations/pgs_development_v1.1.pdf)
@@ -50,5 +43,4 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
     - [mms.mms_part_getspec](https://pyspedas.readthedocs.io/en/latest/mms_analysis.html#pyspedas.projects.mms.mms_part_getspec): Generate spectra and moments from 3D MMS particle data
     - [erg_analysis](https://pyspedas.readthedocs.io/en/latest/erg_analysis.html): Arase (ERG) Particle Tools
 - [pyrfu](https://pyrfu.readthedocs.io/en/latest/index.html): Python package for working with Magnetospheric MultiScale (MMS) mission data
-- [SpectralFitting.jl](https://juliaastro.org/SpectralFitting/stable/): Fast and flexible spectral fitting in Julia.
-- [GDF](https://srijaniiserprinceton.github.io/GDF/index.html): gyrotorpic distribution functions, Slepian basis function based reconstructions to recover distribution functions
+- [GDF](https://srijaniiserprinceton.github.io/GDF/index.html): Slepian-basis reconstructions of gyrotropic distribution functions
