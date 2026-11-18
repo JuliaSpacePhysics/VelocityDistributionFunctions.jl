@@ -10,8 +10,6 @@
 #
 # Each weight is a θ integral times a φ integral, so `_theta_factors` and `_phi_factors` evaluate the trig
 # once per θ and per φ bin and `_omega` combines them per cell.
-omega_weightsd(th, ph, dth, dph) = _omega(_theta_factors(th, dth), _phi_factors(ph, dph))
-
 function _theta_factors(th, dth)
     th, dth = deg2rad(th), deg2rad(dth)
     st1, ct1 = sincos(th - dth / 2)

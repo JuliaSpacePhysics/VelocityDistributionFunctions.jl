@@ -1,9 +1,7 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PlasmaPopulations = "19fe0aba-210f-40e6-8711-72208e0968be"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 VelocityDistributionFunctions = "63a0b508-f74a-48f7-b6e7-0e65849b0078"

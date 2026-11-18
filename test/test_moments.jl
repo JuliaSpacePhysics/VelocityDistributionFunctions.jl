@@ -4,7 +4,6 @@ using VelocityDistributionFunctions: _bin_widths
 using Downloads
 using JLD2
 using PlasmaPopulations: Particle
-using Chairmarks
 
 include("utils.jl")
 

@@ -1,5 +1,7 @@
 using Test
-using VelocityDistributionFunctions: omega_weightsd
+using VelocityDistributionFunctions: _omega, _theta_factors, _phi_factors
+
+omega_weightsd(th, ph, dth, dph) = _omega(_theta_factors(th, dth), _phi_factors(ph, dph))
 
 @testset "omega_weights" begin
     @testset "full-sphere solid angle" begin

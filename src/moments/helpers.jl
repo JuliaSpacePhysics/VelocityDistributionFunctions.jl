@@ -22,6 +22,7 @@ function _safe_eigen(A)
     return SVector{3, T}(vals), SMatrix{3, 3, T}(vecs)
 end
 
+# SPEDAS order: slot 3 gets the eigenvalue whose removal leaves the other two most similar.
 function _temp_sort(eig)
     vals, vecs = eig
     s = SVector{3, Int}(sortperm(SVector(vals)))

@@ -14,7 +14,8 @@ Bin centers and widths of a spherical velocity-space grid: `energy` [eV] and the
 
 `layout` names the data axes, from `:energy`, `:phi`, `:theta` and `:angle` (flattened direction), e.g. `(:phi, :theta, :energy)`.
 A vector lies along its named axis; other arrays broadcast against the data. Missing widths are estimated along each
-coordinate's own axis, so a flattened `:angle` axis needs them supplied.
+coordinate's own axis, so a flattened `:angle` axis needs them supplied. Estimated energy widths are midpoints between
+centers, which overestimate the end bins of a log grid (by 10% for a 20% step); prefer the instrument's `denergy`.
 """
 struct EnergyAngleGrid{E, P, T, DE, DP, DT, N}
     energy::E

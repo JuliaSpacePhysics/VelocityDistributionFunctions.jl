@@ -62,8 +62,7 @@ And after discretization in energy and angle,
 n = \sqrt{\frac{m}{2}} \sum_i f_{E,i}\, a_i\, \frac{Δ E_i}{E_i ^ 2} \sqrt{E_{∞,i}}  Δ \Omega_i
 ```
 
-where the smooth cutoff/acceptance weight $a_i$ (physics/instrument correction factor applied per energy bin near the spacecraft potential to  mitigate the effect of photoelectrons that may show up below the value of spacecraft
-potential.) is
+where the weight $a_i$ suppresses bins below the spacecraft potential, which hold photoelectrons:
 
 ```math
 a_i = \mathrm{clamp}\!\left(\frac{E_i + q\Phi_{sc}}{ Δ E_i} + \frac{1}{2},\; 0,\; 1\right).

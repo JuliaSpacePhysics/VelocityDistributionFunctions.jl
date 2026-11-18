@@ -85,16 +85,6 @@ function compute_pressure_tensor(mftens, velocity, flux, mass)
     return ptens
 end
 
-"""
-    compute_temperature(ptens, density, mass) -> (; ttens, avgtemp, vthermal, t3, t3evec)
-
-Temperature quantities from the pressure tensor.
-
-Eigenvalue decomposition of ``\\mathbf{T}`` yields three temperature eigenvalues
-``(T_1, T_2, T_3)`` sorted by the SPEDAS heuristic:
-the eigenvalue whose removal makes the remaining two most similar is assigned
-to slot 3.
-"""
 function compute_temperature(ptens::SVector{6, T}, density, mass) where {T}
     pt3x3 = SMatrix{3, 3, T}(
         ptens[1], ptens[4], ptens[5],
@@ -111,29 +101,6 @@ function compute_temperature(ptens::SVector{6, T}, density, mass) where {T}
     return (; ttens = t3x3, avgtemp, vthermal = vth, t3 = t3, t3evec = t3evec)
 end
 
-"""
-    compute_field_aligned(ttens, t3evec, velocity, magf) -> (; magt3, symm, symm_theta, symm_phi, symm_ang)
-
-Field-aligned temperature decomposition and symmetry analysis.
-
-Rotates the temperature tensor into a field-aligned coordinate system where
-``\\hat{z}' \\parallel \\mathbf{B}``:
-
-```math
-\\mathbf{T}' = R^{-1}\\, \\mathbf{T}\\, R
-```
-
-The rotation matrix ``R`` has columns ``(\\hat{x}', \\hat{y}', \\hat{z}')`` where
-``\\hat{z}' = \\hat{B}``, ``\\hat{y}' = \\hat{B} \\times \\mathbf{V} / |\\hat{B} \\times \\mathbf{V}|``,
-and ``\\hat{x}'`` completes the right-handed triad.
-
-The symmetry axis is the eigenvector closest to ``\\mathbf{B}``
-(with sign chosen so the dot product is positive), and the symmetry angle is:
-
-```math
-\\alpha = \\arccos|\\hat{B} \\cdot \\hat{e}_\\parallel|
-```
-"""
 function compute_field_aligned(ttens, t3evec, velocity, magf)
     T = eltype(ttens)
     magf_sv = SVector{3, T}(magf)
