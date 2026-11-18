@@ -8,7 +8,7 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
     directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
 
 Solid-angle-weighted means of `S[pitch, energy, time]` over pitch angles in each
-direction, skipping `NaN`. Sectors of half width `half_sector_width` [deg] are weighted by
+direction, skipping sectors whose flux or pitch angle is not finite. Sectors of half width `half_sector_width` [deg] are weighted by
 `2Δθ sin(pitch)`, or `Δθ sin Δθ` within `half_sector_width` of 0° or 180°. `para_tol` applies to both field-aligned directions.
 """
 function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
@@ -49,10 +49,10 @@ function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_widt
                 @simd for p in 1:n_pa
                     s = S[p, E, t]
                     d = dΩ_buf[p]
-                    valid = !isnan(s)
-                    s_eff = ifelse(valid, s, zero(s))
-                    contrib = s_eff * d
-                    dv = d * oftype(d, valid)
+                    sd = s * d
+                    valid = isfinite(sd)
+                    contrib = ifelse(valid, sd, zero(sd))
+                    dv = ifelse(valid, d, zero(d))
                     mp = mask_para[p]; ma = mask_anti[p]; mx = mask_perp[p]
                     no += contrib;       do_ += dv
                     np += contrib * mp;  dp += dv * mp
