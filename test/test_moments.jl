@@ -46,6 +46,8 @@ end
     @test moms.t3 ≈ eachrow(ref["t3"]) rtol = 1.0e-6
     @test moms.magt3 ≈ eachrow(ref["magt3"]) rtol = 1.0e-6
     @test moms.symm_ang ≈ ref["symm_ang"] rtol = 1.0e-5
+    @test moms.symm_theta ≈ 90 .- ref["symm_theta"] rtol = 1.0e-5
+    @test moms.symm_phi ≈ ref["symm_phi"] rtol = 1.0e-5
 
     m1 = plasma_moments(selectdim(data, 1, 1), grids[1]; sc_pot = scpot_data[1], units = :df_cm, species = Particle(; q = 1.602176634e-19, m = 1.67262192369e-27))
     @test m1.density ≈ moms.density[1]
