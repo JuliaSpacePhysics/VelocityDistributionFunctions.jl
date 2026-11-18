@@ -1,5 +1,5 @@
 """
-    pitch_angle_distribution(vdf, B, φ, θ; bins=nothing, method=:mean) -> (; data, pitch_angles)
+    pitch_angle_distribution(vdf, B, φ, θ; bins=12, method=:mean) -> (; data, pitch_angles)
 
 Compute pitch-angle distributions from particle `vdf` and magnetic field `B` measurements, given velocity directions `φ`, `θ`.
 
@@ -12,7 +12,7 @@ Returns a named tuple with fields:
 - `bins` is used for pitch angle binning. It can be an `Integer` for uniform bin count, or a `Vector` of bin edges.
 - `method` is used for aggregation. It can be `:mean` (default) or `:sum`.
 """
-function pitch_angle_distribution(vdf, B, φ, θ; bins = nothing, method = :mean)
+function pitch_angle_distribution(vdf, B, φ, θ; bins = 12, method = :mean)
     _validate_method(method)
 
     sz = size(vdf)
@@ -36,7 +36,7 @@ end
 @inline tslice(x) = eachslice(x; dims = ndims(x))
 
 """
-    tpitch_angle_distribution(vdf, B, φ, θ; bins=nothing, method=:mean)
+    tpitch_angle_distribution(vdf, B, φ, θ; bins=12, method=:mean)
 
 Compute pitch-angle distributions ***time series*** from particle `vdf` and magnetic field `B` measurements, given velocity directions `φ`, `θ`.
 
@@ -50,7 +50,7 @@ Returns a named tuple with fields:
 - `bins` is used for pitch angle binning. It can be an `Integer` for uniform bin count, or a `Vector` of bin edges.
 - `method` is used for aggregation. It can be `:mean` (default) or `:sum`.
 """
-function tpitch_angle_distribution(vdf, B, φ, θ; bins = nothing, method = :mean)
+function tpitch_angle_distribution(vdf, B, φ, θ; bins = 12, method = :mean)
     _validate_method(method)
     sz = size(vdf)
     _validate_angle_array(φ, sz[1], sz[end])
@@ -85,7 +85,6 @@ function _validate_angle_array(angles, n, n_time = 1)
 end
 
 # Pitch angle binning
-_resolve_pitch_edges(::Nothing) = 0.0:15.0:180.0
 _resolve_pitch_edges(n) = range(0.0, 180.0; length = Int(n) + 1)
 
 function _resolve_pitch_edges(edges::AbstractVector)

@@ -17,7 +17,7 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 
 | name | meaning |
 |---|---|
-| `pitch_angle_distribution(vdf, B, φ, θ; bins = nothing, method = :mean)` | pitch-angle distribution of `vdf[φ, θ(, energy)]`, `bins` a count or edges (default 15° bins); returns `(; data, pitch_angles)` |
+| `pitch_angle_distribution(vdf, B, φ, θ; bins = 12, method = :mean)` | pitch-angle distribution of `vdf[φ, θ(, energy)]`, `bins` a count or edges; returns `(; data, pitch_angles)` |
 | `tpitch_angle_distribution(vdf, B, φ, θ; bins, method)` | the same with a trailing time dimension on `vdf`, `B`, and optionally on `φ`, `θ` |
 | `EnergyAngleGrid(energy, phi, theta; layout, denergy, dphi, dtheta)` | spherical velocity-space grid; `layout` names the data axes, e.g. `(:phi, :theta, :energy)` |
 | `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)` | moments of one distribution; field-aligned quantities when `B` is given |
