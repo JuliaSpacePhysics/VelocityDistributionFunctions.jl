@@ -13,6 +13,9 @@
   - `edim` is replaced by the grid's `layout`, naming the axes of one scan, e.g. `layout = (:phi, :theta, :energy)`.
   - Bin widths of a flattened angle axis must be supplied; the estimate was wrong.
 - **Breaking**: species masses are CODATA values instead of SPEDAS's approximations.
+- **Breaking**: `pitch_angle_distribution` and `tpitch_angle_distribution` are replaced by `angle_distribution(data, grid, coord; B, ...)`, which takes an `EnergyAngleGrid` like `plasma_moments` and also bins by gyrophase, φ or θ. `:mean` is now solid-angle weighted, `:sum` gives `NaN` for bins without finite cells, and bins are returned as `edges` and `centers` instead of `pitch_angles`.
+  - `pitch_angle_distribution(vdf, B, φ, θ; kw...)` → `angle_distribution(vdf, EnergyAngleGrid(energy, φ, θ; layout = (:phi, :theta, :energy)), :pitch; B, kw...)`, or `EnergyAngleGrid(nothing, φ, θ; layout = (:phi, :theta))` for 2-D `vdf`
+  - `tpitch_angle_distribution(vdf, B, φ, θ; kw...)` with `B[3, time]` → `angle_distribution(vdf, grid, :pitch; B = eachcol(B), tdim = 4, kw...)`; time-varying angles as a vector of grids.
 - **Breaking**: `qflux` integrates each bin's solid angle exactly instead of evaluating at bin centers as SPEDAS does; for MMS FPI ions it differs from SPEDAS by up to 2%. Moments are at least `Float64`.
 
 ### Removed

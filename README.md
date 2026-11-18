@@ -17,8 +17,8 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 
 | name | meaning |
 |---|---|
-| `pitch_angle_distribution(vdf, B, φ, θ; bins = 12, method = :mean)` | pitch-angle distribution of `vdf[φ, θ(, energy)]`, `bins` a count or edges; returns `(; data, pitch_angles)` |
-| `tpitch_angle_distribution(vdf, B, φ, θ; bins, method)` | the same with a trailing time dimension on `vdf`, `B`, and optionally on `φ`, `θ` |
+| `angle_distribution(data, grid, coord; B, gyro_ref, bins = 12, method = :mean, tdim = nothing)` | per energy, the solid-angle-weighted mean (`method = :sum`: plain sum, for counts) of `data` over the cells whose center direction falls in each `coord` bin, as `(; data[bin, energy], solid_angle, edges, centers)`, `solid_angle` [sr] summing the finite cells of each bin. `coord` is `:pitch` (needs `B`), `:gyrophase` (needs `B` and `gyro_ref`; 0° along the perpendicular projection of `gyro_ref`, 90° along `B × gyro_ref`), `:phi` or `:theta`; `bins` is a count or edges [deg]. With `tdim`, slices along that axis are scans (`B`, `gyro_ref` one per scan) and `data` gains a trailing time axis |
+| `omni_spectrum(data, grid; method = :mean, tdim = nothing)` | per energy, the solid-angle-weighted mean (`:sum`: plain sum) of `data` over all directions, as `[energy(, time)]`; a number for one scan without energies |
 | `EnergyAngleGrid(energy, phi, theta; layout, denergy, dphi, dtheta)` | spherical velocity-space grid; `layout` names the data axes, e.g. `(:phi, :theta, :energy)`; `energy = nothing` for data without an energy axis (not for moments) |
 | `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)` | moments of one distribution; field-aligned quantities when `B` is given |
 | `tmoments(data, grid; species, units, sc_pot, B, tdim = ndims(data))` | `plasma_moments` per time slice, as a `StructArray`; vector arguments give one value per time |
@@ -29,9 +29,9 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 
 ## Features
 
-- [x] Pitch-angle distributions (PADs) from VDFs, and PADs averaged over energy channels
+- [x] Pitch-angle, gyrophase, φ and θ distributions and omni energy spectra from 3D VDFs
+- [x] Pitch-angle spectra averaged over energy channels
 - [x] Directional (omni, parallel, antiparallel, perpendicular) energy spectra from PADs
-- [ ] Energy/gyro-phase spectra
 - [x] Plasma moments (density, velocity, pressure, temperature, heat flux) from 3D distributions, cross-validated against PySPEDAS ([example](docs/src/moment_validation.md))
 
 ## Elsewhere
