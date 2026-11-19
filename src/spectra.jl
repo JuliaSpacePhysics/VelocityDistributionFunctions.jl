@@ -5,26 +5,34 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
 
 
 """
-    directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
+    directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
 
-Solid-angle-weighted means of `S[pitch, energy, time]` over pitch angles in each
-direction, skipping sectors whose flux or pitch angle is not finite. Sectors of half width `half_sector_width` [deg] are weighted by
-`2Δθ sin(pitch)`, or `Δθ sin Δθ` within `half_sector_width` of 0° or 180°. `para_tol` applies to both field-aligned directions.
+With `l = min(loss_cone, 180° - loss_cone)`, sectors at pitch angle `θ` are
+para if `θ < l - para_tol`, anti if `θ > 180° - l + para_tol`, perp if `l + perp_tol < θ < 180° - l - perp_tol`; omni takes all.
+Sectors with non-finite flux or pitch angle are skipped; a direction left without sectors gives `NaN`.
+
+`:mean` weights sectors by solid angle `2Δθ sin θ`, or `Δθ sin Δθ` within `Δθ = half_sector_width` of 0° or 180°.
+`:sum` does not compensate for skipped sectors.
 """
-function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0)
+function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
+    method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))
+    weighted = method === :mean
+    weighted && isnothing(half_sector_width) && throw(ArgumentError("method = :mean requires half_sector_width"))
+    hsw = weighted ? half_sector_width : 0
     n_pa, n_E, n_t = size(S)
-    T = promote_type(eltype(S), eltype(pitch_angles), eltype(loss_cone))
+    T = float(promote_type(eltype(S), eltype(pitch_angles), eltype(loss_cone)))
     omni = Matrix{T}(undef, n_E, n_t)
     para = Matrix{T}(undef, n_E, n_t)
     anti = Matrix{T}(undef, n_E, n_t)
     perp = Matrix{T}(undef, n_E, n_t)
 
-    Δθ = T(deg2rad(half_sector_width))
+    Δθ = T(deg2rad(hsw))
     dΩ_edge = T(Δθ * sin(Δθ))
-    edge_lo = T(half_sector_width)
-    edge_hi = T(180 - half_sector_width)
+    edge_lo = T(hsw)
+    edge_hi = T(180 - hsw)
     two_Δθ = 2Δθ
     _dΩ(pa) = ifelse(pa < edge_lo || pa > edge_hi, dΩ_edge, two_Δθ * T(sind(pa)))
+    _finish(n, d) = weighted ? n / d : ifelse(iszero(d), T(NaN), n)
 
     dΩ_buf = Vector{T}(undef, n_pa)
     mask_para = Vector{T}(undef, n_pa)
@@ -35,7 +43,7 @@ function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_widt
         lc = loss_cone[t]
         for p in 1:n_pa
             pa = pitch_angles[p, t]
-            dΩ_buf[p] = _dΩ(pa)
+            dΩ_buf[p] = weighted ? _dΩ(pa) : ifelse(isfinite(pa), one(T), T(NaN)) # NaN weight drops the sector
             mask_para[p] = T(is_parallel(pa, lc, para_tol))
             mask_anti[p] = T(is_anti_parallel(pa, lc, para_tol))
             mask_perp[p] = T(is_perpendicular(pa, lc, perp_tol))
@@ -56,10 +64,10 @@ function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_widt
                 na += contrib * ma;  da += dv * ma
                 nx += contrib * mx;  dx += dv * mx
             end
-            omni[E, t] = no / do_
-            para[E, t] = np / dp
-            anti[E, t] = na / da
-            perp[E, t] = nx / dx
+            omni[E, t] = _finish(no, do_)
+            para[E, t] = _finish(np, dp)
+            anti[E, t] = _finish(na, da)
+            perp[E, t] = _finish(nx, dx)
         end
     end
     return (; omni, para, anti, perp)

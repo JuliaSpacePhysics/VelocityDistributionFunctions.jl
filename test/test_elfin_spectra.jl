@@ -43,3 +43,10 @@ end
         @test isapprox_with_nan(pas[4][:, 1], PA_CH3_T1)
     end
 end
+
+@testset "directional_energy_spectra method = :sum" begin
+    # loss cone 10°: sectors are para, perp, perp, anti; the para sector's flux is NaN
+    S = reshape([NaN, 2.0, 4.0, 8.0], 4, 1, 1)
+    res = directional_energy_spectra(S, reshape([5.0, 60.0, 120.0, 175.0], 4, 1), [10.0]; method = :sum)
+    @test isequal(map(only, res), (; omni = 14.0, para = NaN, anti = 8.0, perp = 6.0))
+end
