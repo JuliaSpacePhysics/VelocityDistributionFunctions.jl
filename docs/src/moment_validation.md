@@ -30,11 +30,11 @@ moments = tmoments(dist["data"], grid; species = :H, units = :df_cm, tdim = 1,
 nothing # hide
 ```
 
-The moments agree with PySPEDAS to `rtol = 1e-6`. The heat flux differs by up to 2% because PySPEDAS evaluates it at bin centers ([Heat flux](@ref)).
+Temperatures agree with PySPEDAS to `rtol = 1e-6`. Density, velocity and fluxes differ by about 0.1% because PySPEDAS uses an approximate proton mass, here the CODATA value. The heat flux differs by up to 2% because PySPEDAS evaluates it at bin centers ([Heat flux](@ref)).
 
 ```@example moment
 ref = saved["ref"]
-@assert isapprox(moments.density, ref["density"]; rtol = 1e-6)
+@assert isapprox(moments.density, ref["density"]; rtol = 2e-3)
 @assert isapprox(moments.avgtemp, ref["avgtemp"]; rtol = 1e-6)
 (; density = moments.density[1:3], density_pyspedas = ref["density"][1:3], avgtemp_eV = moments.avgtemp[1:3])
 ```

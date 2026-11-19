@@ -1,46 +1,24 @@
-# https://github.com/spedas/pyspedas/blob/master/pyspedas/projects/mms/particles/mms_convert_flux_units.py
+const _SPECIES = (H = Proton, He = Particle("{4}He", 2), O = Particle("{16}O", 1), e = Electron)
 
-const PROTON_MASS = 0.0104535 * 1.0e-10  # eV/(cm/s)²
+# mass [eV/(cm/s)²], charge [e]
+function _species(s::Symbol)
+    haskey(_SPECIES, s) || throw(ArgumentError("species must be one of $(keys(_SPECIES)) or a `PlasmaPopulations.Particle`; got :$s"))
+    return _species(_SPECIES[s])
+end
+_species(p) = (; mass = p.m * 1.0e-4 / E_SI, charge = p.q / E_SI)
 
-# mass in proton masses, charge in elementary charges
-const _SPECIES = (
-    H = (mass = 1.0, charge = 1.0),
-    He = (mass = 4.0, charge = 2.0),
-    O = (mass = 16.0, charge = 1.0),
-    e = (mass = 1 / 1836, charge = -1.0),
-)
-
-_species(s::Symbol) = _SPECIES[s]
-_species(s) = (; s.mass, s.charge)
-
-"""
-    _conversion_coeff(from, to, A)
-
-Returns (coefficient, energy_exponent) such that: out = data * c * E^p, for particles of mass `A` proton masses.
-
-Conversion chain: `df_cm ↔ df_km ↔ flux ↔ eflux`
-
-- `f [s³/cm⁶]` — phase space density (CGS)
-- `f [s³/km⁶]` — phase space density (SI-ish)
-- `F [#/(cm²·s·sr·eV)]` — differential number flux, `F = 2E/m² · f`
-- `j [eV/(cm²·s·sr·eV)]` — differential energy flux, `j = E · F`
-"""
-@inline function _conversion_coeff(from, to, A)
-    from == to && return (1.0, 0)
-    flux_to_df = A^2 * 0.5447e6
-    c_in, p_in = _to_flux_coeff(Val(from), flux_to_df)
-    c_out, p_out = _from_flux_coeff(Val(to), flux_to_df)
-    return (c_in * c_out, p_in + p_out)
+# (c, p) with `out = data * c * E^p`, for particle mass `m` [eV/(cm/s)²].
+function _conversion_coeff(from::Symbol, to::Symbol, m)
+    c_from, p_from = _to_df_cm(from, m)
+    c_to, p_to = _to_df_cm(to, m)
+    return (c_from / c_to, p_from - p_to)
 end
 
-# any unit → flux: (coefficient, energy_exponent)
-_to_flux_coeff(::Val{:flux}, c) = (1.0, 0)
-_to_flux_coeff(::Val{:eflux}, c) = (1.0, -1)
-_to_flux_coeff(::Val{:df_km}, c) = (1.0 / c, 1)
-_to_flux_coeff(::Val{:df_cm}, c) = (1.0e30 / c, 1)
-
-# flux → any unit: (coefficient, energy_exponent)
-_from_flux_coeff(::Val{:flux}, c) = (1.0, 0)
-_from_flux_coeff(::Val{:eflux}, c) = (1.0, 1)
-_from_flux_coeff(::Val{:df_km}, c) = (c, -1)
-_from_flux_coeff(::Val{:df_cm}, c) = (c / 1.0e30, -1)
+# (c, p) with `f[s³/cm⁶] = data * c * E^p`, from `F = 2E/m² · f` and `j = E · F`.
+function _to_df_cm(units::Symbol, m)
+    units === :df_cm && return (1.0, 0)
+    units === :df_km && return (1.0e-30, 0)
+    units === :flux && return (m^2 / 2, -1)
+    units === :eflux && return (m^2 / 2, -2)
+    throw(ArgumentError("units must be one of :flux, :eflux, :df_km, :df_cm; got $(repr(units))"))
+end

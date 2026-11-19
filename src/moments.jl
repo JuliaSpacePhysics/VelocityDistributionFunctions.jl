@@ -46,7 +46,7 @@ end
 Moments of one distribution `data` on `grid`.
 
 - `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_km` [s³/km⁶] or `:df_cm` [s³/cm⁶].
-- `species` is `:H`, `:He` (α), `:O` (O⁺), `:e`, or any object with `mass` [proton masses] and `charge` [e].
+- `species` is `:H`, `:He` (α), `:O` (¹⁶O⁺), `:e`, or a `PlasmaPopulations.Particle`.
 - `sc_pot` [V] shifts energies by `charge * sc_pot`.
 - Output NamedTuple is CGS with energies in eV: `density` [cm⁻³], `velocity`, `vthermal` [cm/s], `flux` [cm⁻² s⁻¹],
   `eflux`, `qflux` [eV cm⁻² s⁻¹], `mftens`, `ptens` [eV cm⁻³] as `(xx, yy, zz, xy, xz, yz)`, `ttens`, `avgtemp`, `t3` [eV].
@@ -57,7 +57,7 @@ function plasma_moments(data, grid::EnergyAngleGrid; species, units, sc_pot = 0,
         throw(DimensionMismatch("data has $(ndims(data)) axes but grid layout $(grid.layout) names $(length(grid.layout))"))
     (; mass, charge) = _species(species)
     coefficient, E_exp = _conversion_coeff(units, :eflux, mass)
-    return _plasma_moments(data, grid, sc_pot, B; coefficient, E_exp, mass = mass * PROTON_MASS, charge)
+    return _plasma_moments(data, grid, sc_pot, B; coefficient, E_exp, mass, charge)
 end
 
 """
