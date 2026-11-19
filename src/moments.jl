@@ -123,10 +123,19 @@ function _bshape(data, xs...)
     return map(length, ax)
 end
 
-@inline function _energy_scale(E, dE, ΔU, coefficient, E_exp)
+# Energy factors scale·E∞^p, p = 1/2, 1, 3/2, 2, of the density, flux, mftens and eflux sums.
+@inline function _energy_weights(E, dE, ΔU, coefficient, E_exp)
     E = _clean_energy(E)
-    return coefficient * dE * _weight(E, dE, ΔU) * E^(E_exp - 2)
+    scale = coefficient * dE * _weight(E, dE, ΔU) * E^(E_exp - 2)
+    e_inf = max(E + ΔU, zero(E))
+    sqrte = sqrt(e_inf)
+    w = scale * e_inf
+    return (scale * sqrte, w, w * sqrte, w * e_inf)
 end
+
+# `Array` over a bump-allocated buffer: `UnsafeArray` stores carry no aliasing information, so the scatter loop
+# of `_energy_sums!` would not vectorize.
+_as_array(A) = unsafe_wrap(Array, pointer(A), size(A))
 
 function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, charge)
     (; energy, denergy, phi, dphi, theta, dtheta) = grid
@@ -136,7 +145,6 @@ function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, cha
     eshape = _bshape(data, energy, denergy)
     θshape, φshape = _bshape(data, theta, dtheta), _bshape(data, phi, dphi)
     ashape = map(max, θshape, φshape)
-    cells = _cells(ashape, data)
     ΔU = T(charge * sc_pot)
     A = promote_type(eltype(theta), eltype(dtheta), eltype(phi), eltype(dphi), Float64)
 
@@ -147,12 +155,10 @@ function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, cha
         @. θf = _theta_factors(A(theta), A(dtheta))
         @. φf = _phi_factors(A(phi), A(dphi))
         @. omega = _omega(θf, φf)
-        Escale = @alloc(T, eshape...)
-        e_inf = @alloc(T, eshape...)
-
-        @. Escale = _energy_scale(T(energy), T(denergy), ΔU, coefficient, E_exp)
-        @. e_inf = max(_clean_energy(T(energy)) + ΔU, zero(T))
-        _den, flux, _mftens, eflux = compute_fused_moments(data, Escale, e_inf, omega, cells)
+        W = _as_array(@alloc(NTuple{4, T}, eshape...))
+        @. W = _energy_weights(T(energy), T(denergy), ΔU, coefficient, E_exp)
+        S = _as_array(@alloc(T, length(omega), 4))
+        _den, flux, _mftens, eflux = compute_fused_moments(data, W, omega, S)
         density = sqrt(mass / 2) * _den
         mftens = _mftens .* T(sqrt(2 * mass))
         velocity = flux ./ density

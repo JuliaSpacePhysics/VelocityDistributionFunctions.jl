@@ -1,18 +1,7 @@
-# Broadcast indexing: data cell `I` reads cell `_project(I, shape)` of an array of padded size `shape` (see `_bshape`).
-@inline _project(I, shape) = CartesianIndex(map((i, s) -> s == 1 ? 1 : i, Tuple(I), shape))
-
-# `(J, members)` for each cell `J` of an array of padded size `shape`: the data cells that broadcast onto it.
-# Loops only over the axes the array lacks, which is faster than a padded `CartesianIndices`.
-function _cells(shape, data)
-    dims = Tuple(d for d in 1:ndims(data) if shape[d] == 1 && size(data, d) > 1)
-    group = CartesianIndices(map(d -> axes(data, d), dims))
-    return ((J, (_member(J, K, dims) for K in group)) for J in CartesianIndices(shape))
-end
-
-# `J` with its entries at `dims` replaced by those of `K`
-@inline _member(J, K, dims) = CartesianIndex(_setindices(Tuple(J), Tuple(K), dims))
-@inline _setindices(t, ::Tuple{}, ::Tuple{}) = t
-@inline _setindices(t, k, d) = _setindices(Base.setindex(t, first(k), first(d)), tail(k), tail(d))
+# Column-major strides of an array of padded size `shape` (see `_bshape`), zero along its singleton axes,
+# so data cell `t` broadcasts from its linear index `_offset(t, strides)`.
+_bstrides(shape) = map((n, st) -> n == 1 ? 0 : st, shape, Base.size_to_strides(1, shape...))
+@inline _offset(t, strides) = 1 + sum(map((i, st) -> (i - 1) * st, t, strides); init = 0)
 
 # Rotation matrix with z' along `v1`, y' along `v1 × v2`, x' completing the triad.
 # Matches SPEDAS `rot_mat`.

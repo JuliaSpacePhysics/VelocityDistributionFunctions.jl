@@ -2,41 +2,72 @@
 # Individual moment computations
 # ============================================================================
 
-# Fused sums for density (1), flux (3), mftens (6) and eflux (3)
-# Energy sums per angle cell are weighted once by its `Omega`.
-@muladd function compute_fused_moments(data, Escale, e_inf, Omega, cells)
-    T = Base.promote_eltype(data, e_inf, eltype(Omega))
+# Density, flux, mftens and eflux sums Σₐ S[a, p] Omega[a] over angle cells a, the linear indices of `Omega`.
+function compute_fused_moments(data, W, Omega, S)
+    _energy_sums!(S, data, W, size(Omega))
+    T = eltype(S)
     den = zero(T)
     flux = zero(SVector{3, T})
     mftens = zero(SVector{6, T})
     eflux = zero(SVector{3, T})
-    eshape = size(e_inf)
-    @inbounds for (J, members) in cells
-        sd, sf, sm, se = zero(T), zero(T), zero(T), zero(T)   # sums of e_inf^0.5, e_inf^1, e_inf^1.5, e_inf^2 terms
-        for I in members
-            ie = _project(I, eshape)
-            einf = e_inf[ie]
-            sqrteinf = sqrt(einf)
-            d = data[I]
-            fk = ifelse(isfinite(d), d, zero(d)) * Escale[ie]
-            fk_einf = fk * einf
-            sd = fk * sqrteinf + sd
-            sf += fk_einf
-            sm = fk_einf * sqrteinf + sm
-            se = fk_einf * einf + se
-        end
-        ω = Omega[J]
+    @inbounds for (a, ω) in enumerate(Omega)
         ωj = SVector{3, T}(ω[2], ω[3], ω[4])
         ωij = SVector{6, T}(ω[5], ω[6], ω[7], ω[8], ω[9], ω[10])
-        den = sd * ω[1] + den
-        flux = sf * ωj + flux
-        eflux = se * ωj + eflux
-        mftens = sm * ωij + mftens
+        den = muladd(S[a, 1], ω[1], den)
+        flux = muladd.(S[a, 2], ωj, flux)
+        mftens = muladd.(S[a, 3], ωij, mftens)
+        eflux = muladd.(S[a, 4], ωj, eflux)
     end
     sums = (den, flux, mftens, eflux)
     any(isfinite, data) && return sums
     return map(x -> x * T(NaN), sums)
 end
+
+# S[a, p] = Σ f[I] W[e(I)][p] over the data cells I of angle cell a, where `ashape` and `size(W)` are padded
+# shapes (see `_bshape`). Data are read in memory order: along axis 1 the angle cell either advances (scatter)
+# or stays (reduce), and both loops vectorize.
+function _energy_sums!(S, data, W, ashape)
+    fill!(S, zero(eltype(S)))
+    astr, wstr = _bstrides(ashape), _bstrides(size(W))
+    a1, w1 = first(astr), first(wstr)
+    @inbounds for J in CartesianIndices(tail(axes(data)))
+        t = Tuple(J)
+        a0, e0 = _offset(t, tail(astr)), _offset(t, tail(wstr))
+        if iszero(a1)
+            s = _reduce_energy(data, W, t, e0, w1)
+            for p in 1:4
+                S[a0, p] += s[p]
+            end
+        else
+            @simd for i in axes(data, 1)
+                f = _finite(data[i, t...])
+                w = W[e0 + (i - 1) * w1]
+                a = a0 + i - 1
+                S[a, 1] = muladd(f, w[1], S[a, 1])
+                S[a, 2] = muladd(f, w[2], S[a, 2])
+                S[a, 3] = muladd(f, w[3], S[a, 3])
+                S[a, 4] = muladd(f, w[4], S[a, 4])
+            end
+        end
+    end
+    return S
+end
+
+@inline function _reduce_energy(data, W, t, e0, w1)
+    T = eltype(eltype(W))
+    s1 = s2 = s3 = s4 = zero(T)
+    @inbounds @simd for i in axes(data, 1)
+        f = _finite(data[i, t...])
+        w = W[e0 + (i - 1) * w1]
+        s1 = muladd(f, w[1], s1)
+        s2 = muladd(f, w[2], s2)
+        s3 = muladd(f, w[3], s3)
+        s4 = muladd(f, w[4], s4)
+    end
+    return (s1, s2, s3, s4)
+end
+
+_finite(d) = ifelse(isfinite(d), d, zero(d))
 
 # Heat flux q = (m/2)∫|v - u|²(v - u) f d³v expanded in the lab-frame moments
 function compute_heat_flux(eflux, mftens, velocity, density, mass)
