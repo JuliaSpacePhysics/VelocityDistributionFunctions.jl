@@ -8,9 +8,9 @@ function sort_flux_by_pitch_angle!(flux, pitch_angle; sort_on_reverse = true)
     n_pa = size(pitch_angle, pa_dim)
     N_flux = ndims(flux)
     N_pa = ndims(pitch_angle)
-    @assert size(flux, pa_dim) == n_pa
-    @assert N_flux ∈ (2, 3)
-    @assert N_pa == 2
+    size(flux, pa_dim) == n_pa || throw(DimensionMismatch("flux has $(size(flux, pa_dim)) pitch angles along dim 1, pitch_angle has $n_pa"))
+    N_flux ∈ (2, 3) || throw(ArgumentError("flux must be 2- or 3-dimensional, got $N_flux dimensions (size $(size(flux)))"))
+    N_pa == 2 || throw(ArgumentError("pitch_angle must be 2-dimensional [pitch, time], got $N_pa dimensions (size $(size(pitch_angle)))"))
 
     # Sort each time step
     perm = zeros(Int, n_pa)
