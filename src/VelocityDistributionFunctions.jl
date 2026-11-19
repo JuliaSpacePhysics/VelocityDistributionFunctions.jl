@@ -4,7 +4,6 @@ using Bumper: @alloc, @no_escape
 using LinearAlgebra
 using PlasmaPopulations: Particle, Proton, Electron, E_SI
 using StaticArrays: SVector, SMatrix, SA, @SMatrix
-using MuladdMacro: @muladd
 using Base: tail
 using StructArrays: StructArray
 
