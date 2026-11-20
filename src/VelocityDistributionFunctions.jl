@@ -14,11 +14,7 @@ include("moments.jl")
 include("angles.jl")
 
 export angle_distribution, omni_spectrum
-export directional_spectra
+export directional_spectra, group_mean
 export plasma_moments, EnergyAngleGrid, convert_flux_units
-
-@static if VERSION >= v"1.11.0-DEV.469"
-    eval(Meta.parse("public pitch_angle_spectra"))
-end
 
 end

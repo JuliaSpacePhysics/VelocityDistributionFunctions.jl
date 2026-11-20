@@ -25,13 +25,12 @@ Omit `tdim` for one scan. For a series, pass its time axis explicitly (e.g. `tdi
 | `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)` | moments as a NamedTuple for one scan or a StructArray for a series; `sc_pot` may be shared or per scan. Supplying `B` adds field-aligned quantities |
 | `convert_flux_units(data, energy, from => to; species = nothing)` | `data` converted between the `units` of `plasma_moments`; `energy` [eV] broadcasts against `data`; `species` is required between flux and phase-space density |
 | `directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean, tdim = nothing)` | omni, parallel, antiparallel and perpendicular spectra `(; omni, para, anti, perp)` over the axes after pitch of a scan `S[pitch, rest...]`, e.g. energy spectra of `S[pitch, energy]`; a series accepts shared or per-scan pitch centers and loss cone; `method` is `:mean` (solid-angle-weighted mean; requires `half_sector_width`) or `:sum` (unweighted sum, for counts) |
-| below | public, not exported |
-| `pitch_angle_spectra(S, dE, min_channels, max_channels)` | for each channel range `min_channels[i]:max_channels[i]`, the `dE`-weighted mean of `S[pitch, energy, time]` over energy, skipping non-finite values, as `[pitch, time]` |
+| `group_mean(data, groups; dims, weights = nothing)` | mean of `data` over each group of indices along axis `dims` (e.g. energy channels `groups = [1:3, 4:6]`), weighted by `weights` (e.g. channel widths), skipping non-finite values; axis `dims` becomes a group axis |
 
 ## Features
 
 - [x] Pitch-angle, gyrophase, φ and θ distributions and omni energy spectra from 3D VDFs
-- [x] Pitch-angle spectra averaged over energy channels
+- [x] Weighted means over groups of channels, e.g. energy bands
 - [x] Directional (omni, parallel, antiparallel, perpendicular) energy spectra from PADs
 - [x] Plasma moments (density, velocity, pressure, temperature, heat flux) from 3D distributions, cross-validated against PySPEDAS ([example](docs/src/moment_validation.md))
 
