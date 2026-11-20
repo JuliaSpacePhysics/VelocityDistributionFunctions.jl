@@ -1,6 +1,5 @@
 using BenchmarkTools
 using VelocityDistributionFunctions
-using VelocityDistributionFunctions: directional_spectra, pitch_angle_spectra, sort_flux_by_pitch_angle!
 using JLD2
 
 const SUITE = BenchmarkGroup()
@@ -15,9 +14,7 @@ let
 
     g = SUITE["spectra"] = BenchmarkGroup()
     g["directional_spectra"] = @benchmarkable directional_spectra($S, $(eachcol(pa)), $LC; tdim = 3, $params...)
-
-    S_sorted = (s = copy(S); sort_flux_by_pitch_angle!(s, pa); s)
-    g["pitch_angle_spectra"] = @benchmarkable pitch_angle_spectra($S_sorted, $ELFIN_EPD_dE, $(ELFIN_PA_CHANNELS)...)
+    g["group_mean"] = @benchmarkable group_mean($S, $ELFIN_PA_CHANNELS; dims = 2, weights = $ELFIN_EPD_dE)
 end
 
 # plasma_moments benchmark with synthetic MMS-like data

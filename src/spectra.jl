@@ -100,36 +100,49 @@ function _directional_scan!((omni, para, anti, perp), t, buf, S, centers, lc, we
     return
 end
 
-function pitch_angle_spectra(S, dE, min_channels, max_channels)
-    n_pa, _, n_time = size(S)
-    T = promote_type(eltype(S), eltype(dE))
-    numerator = similar(S, T, n_pa, n_time)
-    denominator = similar(S, T, n_pa, n_time)
-    return map(min_channels, max_channels) do min_ch, max_ch
-        _pa_kernel!(numerator, denominator, S, dE, min_ch, max_ch)
-        numerator ./ denominator
+"""
+    group_mean(data, groups; dims, weights = nothing)
+
+Mean of `data` over each group of indices in `groups` (e.g. `[1:3, 4:6]`) along axis `dims`, weighted by `weights` (one per index along `dims`) if given.
+The output has the axes of `data` with one entry per group along `dims`.
+Non-finite values are skipped; a group left without values gives `NaN`.
+"""
+function group_mean(data, groups; dims, weights = nothing)
+    dims isa Integer && 1 <= dims <= ndims(data) || throw(ArgumentError("dims must be a data axis"))
+    Base.require_one_based_indexing(data)
+    n = size(data, dims)
+    if !isnothing(weights)
+        Base.require_one_based_indexing(weights)
+        length(weights) == n || throw(DimensionMismatch("expected $n weights, got $(length(weights))"))
     end
+    all(g -> checkbounds(Bool, 1:n, g), groups) || throw(ArgumentError("groups must index the $n entries along dims"))
+    T = float(promote_type(eltype(data), isnothing(weights) ? Bool : eltype(weights)))
+    pre, post = axes(data)[1:(dims - 1)], axes(data)[(dims + 1):end]
+    out = similar(data, T, pre..., length(groups), post...)
+    return _group_mean!(out, data, weights, groups, CartesianIndices(pre), CartesianIndices(post))
 end
 
-function _pa_kernel!(num, den, S, dE, e_min, e_max)
-    n_pa, _, n_t = size(S)
-    Tn = eltype(num)
-    Td = eltype(den)
-    # Init num[:, t]/den[:, t] just before reducing into them to keep them cache-hot through the e-loop.
-    @inbounds for t in 1:n_t
-        @simd for p in 1:n_pa
-            num[p, t] = zero(Tn)
-            den[p, t] = zero(Td)
+function _group_mean!(out, data, weights, groups, pre, post)
+    T = eltype(out)
+    den = Array{T}(undef, size(pre))
+    # Each `out[pre, g, K]` is reduced right after its reset, staying cache-hot through the index loop.
+    @inbounds for K in post, (g, group) in enumerate(groups)
+        for I in pre
+            out[I, g, K] = zero(T)
+            den[I] = zero(T)
         end
-        for e in e_min:e_max
-            de = dE[e]
-            @simd for p in 1:n_pa
-                s = S[p, e, t]
+        for i in group
+            w = isnothing(weights) ? one(T) : T(weights[i])
+            @simd for I in pre
+                s = data[I, i, K]
                 valid = isfinite(s)
-                num[p, t] += ifelse(valid, s, zero(s)) * de
-                den[p, t] += de * oftype(de, valid)
+                out[I, g, K] += ifelse(valid, T(s), zero(T)) * w
+                den[I] += ifelse(valid, w, zero(T))
             end
         end
+        for I in pre
+            out[I, g, K] /= den[I]
+        end
     end
-    return num, den
+    return out
 end

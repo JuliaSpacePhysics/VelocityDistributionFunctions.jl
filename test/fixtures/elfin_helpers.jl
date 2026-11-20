@@ -7,7 +7,7 @@ using JLD2
 const ELFIN_EPD_dE = Float32[30, 40, 40, 50, 60, 75, 85, 200, 270, 400, 500, 700, 850, 800, 1650, 2200]
 
 # Default channel groupings used by `epd_l2_PAspectra`.
-const ELFIN_PA_CHANNELS = ((1, 4, 7, 10), (3, 6, 9, 16))
+const ELFIN_PA_CHANNELS = [1:3, 4:6, 7:9, 10:16]
 
 const ELFIN_FIXTURE_PATH = joinpath(@__DIR__, "elfin_epdef_20201001_t1.jld2")
 
