@@ -103,8 +103,6 @@ end
 """
     group_mean(data, groups; dims, weights = nothing)
 
-Mean of `data` over each group of indices in `groups` (e.g. `[1:3, 4:6]`) along axis `dims`, weighted by `weights` (one per index along `dims`) if given.
-The output has the axes of `data` with one entry per group along `dims`.
 Non-finite values are skipped; a group left without values gives `NaN`.
 """
 function group_mean(data, groups; dims, weights = nothing)

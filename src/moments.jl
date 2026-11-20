@@ -10,8 +10,6 @@ include("moments/compute.jl")
 """
     plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
 
-Moments of one scan as a NamedTuple. With `tdim`, return a StructArray with one record per scan along that axis.
-Use one grid and spacecraft potential for all scans or one of each per scan. Supply series fields as one `B` vector per scan.
 Align ancillary measurements to the scan intervals before calling.
 
 - `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_cm` [s³/cm⁶], `:df_km` [s³/km⁶] or `:df_m` [s³/m⁶].
