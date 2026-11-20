@@ -1,6 +1,5 @@
 using Test
 using VelocityDistributionFunctions
-using VelocityDistributionFunctions: sort_flux_by_pitch_angle!
 
 include(joinpath(@__DIR__, "fixtures/elfin_helpers.jl"))
 
@@ -34,18 +33,16 @@ end
     end
 
     @testset "group_mean" begin
-        S2 = copy(S)
-        sort_flux_by_pitch_angle!(S2, pa)
-        pas = group_mean(S2, ELFIN_PA_CHANNELS; dims = 2, weights = ELFIN_EPD_dE)
+        pas = group_mean(S, ELFIN_PA_CHANNELS; dims = 2, weights = ELFIN_EPD_dE)
         @test size(pas) == (10, 4, 1)
         @test isapprox_with_nan(pas[:, 1, 1], PA_CH0_T1)
         @test isapprox_with_nan(pas[:, 4, 1], PA_CH3_T1)
         # the grouped axis may sit anywhere; one scan has no time axis
-        @test isequal(group_mean(permutedims(S2[:, :, 1]), ELFIN_PA_CHANNELS; dims = 1, weights = ELFIN_EPD_dE), permutedims(pas[:, :, 1]))
+        @test isequal(group_mean(permutedims(S[:, :, 1]), ELFIN_PA_CHANNELS; dims = 1, weights = ELFIN_EPD_dE), permutedims(pas[:, :, 1]))
         @test group_mean([1, 2, 3], [1:2, 3:3]; dims = 1) == [1.5, 3]
         @test group_mean([1, 2, 3], [1:2, 3:3]; dims = 1, weights = [1, 3, 2]) == [1.75, 3]
-        @test_throws ArgumentError group_mean(S2, [15:17]; dims = 2)
-        @test_throws DimensionMismatch group_mean(S2, ELFIN_PA_CHANNELS; dims = 1, weights = ELFIN_EPD_dE)
+        @test_throws ArgumentError group_mean(S, [15:17]; dims = 2)
+        @test_throws DimensionMismatch group_mean(S, ELFIN_PA_CHANNELS; dims = 1, weights = ELFIN_EPD_dE)
     end
 end
 
