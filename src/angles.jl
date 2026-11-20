@@ -1,9 +1,7 @@
 """
     angle_distribution(data, grid, coord; B = nothing, gyro_ref = nothing, bins = 12, method = :mean, tdim = nothing) -> (; data, solid_angle, edges, centers)
 
-For `:gyrophase`, the projection of `gyro_ref` perpendicular to `B` defines 0°. Positive angles turn toward `B × gyro_ref`.
-Each cell goes whole to the bin of its center direction. Non-finite cells are skipped; bins without finite cells are `NaN`,
-as are all bins when `B` or `gyro_ref` defines no direction.
+Non-finite cells are skipped; bins without finite cells are `NaN`, as are all bins when `B` or `gyro_ref` defines no direction.
 """
 function angle_distribution(data, grid, coord::Symbol; B = nothing, gyro_ref = nothing, bins = 12, method = :mean, tdim = nothing)
     method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))
