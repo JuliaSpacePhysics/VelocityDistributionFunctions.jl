@@ -5,6 +5,7 @@
 ### Changed
 
 - **Breaking**: `directional_energy_spectra(S, pa, lc; kw...)` → `directional_spectra(S, eachcol(pa), lc; tdim = 3, kw...)`.
+- **Breaking**: `sort_flux_by_pitch_angle!` is removed.
 - **Breaking**: `PAspectra` is replaced by `group_mean(data, groups; dims, weights)`, which returns one array with a group axis: `PAspectra(S, dE, mins, maxs)` → `eachslice(group_mean(S, range.(mins, maxs); dims = 2, weights = dE); dims = 2)`.
 - **Breaking**: angles follow physics spherical coordinates of the particle velocity direction. `plasma_moments`/`tmoments` previously took the latitude `θ` (SPEDAS), now the polar angle. `pitch_angle_distribution`/`tpitch_angle_distribution` previously took look directions, now velocity directions.
 - **Breaking**: `plasma_moments` requires explicit `species` and `units` keywords. A custom `species` is a [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl) `Particle` instead of `(; mass, charge)`.

@@ -9,7 +9,6 @@ using StructArrays: StructArray
 
 include("unit_conversion.jl")
 include("spectra.jl")
-include("flux.jl")
 include("moments.jl")
 include("angles.jl")
 
