@@ -20,7 +20,7 @@ let
     g["pitch_angle_spectra"] = @benchmarkable pitch_angle_spectra($S_sorted, $ELFIN_EPD_dE, $(ELFIN_PA_CHANNELS)...)
 end
 
-# tmoments benchmark with synthetic MMS-like data
+# plasma_moments benchmark with synthetic MMS-like data
 let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     data = rand(Float32, nt, nphi, ntheta, nenergy)
     theta = collect(range(90 / ntheta, 180 - 90 / ntheta, length = ntheta))
@@ -30,7 +30,7 @@ let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     grid = EnergyAngleGrid(energy, phi, theta; layout = (:phi, :theta, :energy))
     B = eachrow(randn(nt, 3))
 
-    g = SUITE["tmoments"] = BenchmarkGroup()
-    g["no_magf"] = @benchmarkable tmoments($data, $grid; sc_pot = $scpot, tdim = 1, units = :df_cm, species = :H)
-    g["with_magf"] = @benchmarkable tmoments($data, $grid; sc_pot = $scpot, B = $B, tdim = 1, units = :df_cm, species = :H)
+    g = SUITE["plasma_moments"] = BenchmarkGroup()
+    g["no_magf"] = @benchmarkable plasma_moments($data, $grid; sc_pot = $scpot, tdim = 1, units = :df_cm, species = :H)
+    g["with_magf"] = @benchmarkable plasma_moments($data, $grid; sc_pot = $scpot, B = $B, tdim = 1, units = :df_cm, species = :H)
 end

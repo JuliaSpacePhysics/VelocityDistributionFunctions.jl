@@ -25,7 +25,7 @@ Two FPI properties shape the grid:
 phi = mod.(dist["phi"] .+ 180, 360)
 theta = 180 .- dist["theta"]
 grid = EnergyAngleGrid.(eachrow(dist["energy"]), eachrow(phi), Ref(theta); layout = (:phi, :theta, :energy))
-moments = tmoments(dist["data"], grid; species = :H, units = :df_cm, tdim = 1,
+moments = plasma_moments(dist["data"], grid; species = :H, units = :df_cm, tdim = 1,
     sc_pot = saved["scpot_data"], B = eachrow(saved["mag_data"]))
 nothing # hide
 ```

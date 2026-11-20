@@ -48,9 +48,11 @@ function EnergyAngleGrid(energy, phi, theta; layout, denergy = nothing, dphi = n
 end
 
 """
-    plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)
+    plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
 
-Moments of one distribution `data` on `grid`.
+Moments of one scan as a NamedTuple. With `tdim`, return a StructArray with one record per scan along that axis.
+Use one grid and spacecraft potential for all scans or one of each per scan. Supply series fields as one `B` vector per scan.
+Align ancillary measurements to the scan intervals before calling.
 
 - `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_cm` [s³/cm⁶], `:df_km` [s³/km⁶] or `:df_m` [s³/m⁶].
 - `species` is `:H`, `:He` (α), `:O` (¹⁶O⁺), `:e`, or a `PlasmaPopulations.Particle`.
@@ -60,27 +62,18 @@ Moments of one distribution `data` on `grid`.
   `eflux`, `qflux` [eV cm⁻² s⁻¹], `mftens`, `ptens` [eV cm⁻³] as `(xx, yy, zz, xy, xz, yz)`, `ttens`, `avgtemp`, `t3` [eV].
 - With field `B`, adds `magt3` [eV] `(⊥, ⊥, ∥)` and the symmetry axis `symm` with `symm_theta`, `symm_phi`, `symm_ang` [deg].
 """
-function plasma_moments(data, grid::EnergyAngleGrid; species, units, sc_pot = 0, B = nothing)
-    ndims(data) == length(grid.layout) ||
-        throw(DimensionMismatch("data has $(ndims(data)) axes but grid layout $(grid.layout) names $(length(grid.layout))"))
+function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
     (; mass, charge) = _species(species)
     coefficient, E_exp = _conversion_coeff(units, :eflux, mass)
-    return _plasma_moments(data, grid, sc_pot, B; coefficient, E_exp, mass, charge)
-end
-
-"""
-    tmoments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = ndims(data))::StructArray
-
-Plasma moments of each slice of `data` along its time axis `tdim`; grid arrays broadcast against a slice. Align ancillary measurements to the scan intervals before calling.
-`grid`, `sc_pot` and `B` are a vector with one value per time, or, for `grid` and `sc_pot`, one value for all times.
-"""
-function tmoments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = ndims(data))
+    function scan(d, g::EnergyAngleGrid, pot, field)
+        ndims(d) == length(g.layout) ||
+            throw(DimensionMismatch("scan has $(ndims(d)) axes but grid layout $(g.layout) names $(length(g.layout))"))
+        return _plasma_moments(d, g, pot, field; coefficient, E_exp, mass, charge)
+    end
+    isnothing(tdim) && return scan(data, grid, sc_pot, B)
     nt = _scan_count(data, tdim, grid; B)
     sc_pot isa Number || _check_series(sc_pot, nt, "sc_pot")
-    moment_at(i) = plasma_moments(
-        selectdim(data, tdim, i), _at(grid, i);
-        sc_pot = _at(sc_pot, i), B = _at(B, i), species, units
-    )
+    moment_at(i) = scan(selectdim(data, tdim, i), _at(grid, i), _at(sc_pot, i), _at(B, i))
     first_result = moment_at(1)
     result = StructArray{typeof(first_result)}(undef, nt)
     result[1] = first_result
