@@ -1,6 +1,6 @@
 using Test
 using VelocityDistributionFunctions
-using VelocityDistributionFunctions: directional_energy_spectra, pitch_angle_spectra, sort_flux_by_pitch_angle!
+using VelocityDistributionFunctions: directional_spectra, pitch_angle_spectra, sort_flux_by_pitch_angle!
 
 include(joinpath(@__DIR__, "fixtures/elfin_helpers.jl"))
 
@@ -24,8 +24,8 @@ end
 
     params = elfin_des_params(size(pa, 1))
 
-    @testset "directional_energy_spectra" begin
-        res = directional_energy_spectra(S, pa, LC; params...)
+    @testset "directional_spectra" begin
+        res = directional_spectra(S, eachcol(pa), LC; tdim = 3, params...)
         @test size(res.para) == (16, 1)
         @test res.para[:, 1] ≈ PARA_T1
         @test res.anti[:, 1] ≈ ANTI_T1
@@ -44,15 +44,45 @@ end
     end
 end
 
-@testset "directional_energy_spectra method = :sum" begin
+@testset "directional_spectra method = :sum" begin
     # loss cone 10°: sectors are para, perp, perp, anti; the para sector's flux is NaN
-    S = reshape([NaN, 2.0, 4.0, 8.0], 4, 1, 1)
-    res = directional_energy_spectra(S, reshape([5.0, 60.0, 120.0, 175.0], 4, 1), [10.0]; method = :sum)
+    res = directional_spectra([NaN; 2.0; 4.0; 8.0;;], [5.0, 60.0, 120.0, 175.0], 10.0; method = :sum)
     @test isequal(map(only, res), (; omni = 14.0, para = NaN, anti = 8.0, perp = 6.0))
 end
 
+@testset "directional_spectra of an angle_distribution" begin
+    # counts at pitch 15° (para), 75° (perp) and 165° (anti) for two energies
+    grid = EnergyAngleGrid([1, 2], 0, [15, 75, 165]; layout = (:theta, :energy), dphi = 360, dtheta = 30)
+    pad = angle_distribution([1 2; 3 4; 5 6], grid, :pitch; B = [0, 0, 1], bins = 6, method = :sum)
+    scan_counts(S, centers, lc) = directional_spectra(S, centers, lc; method = :sum)
+    expected = (; omni = [9, 12], para = [1, 2], anti = [5, 6], perp = [3, 4])
+    @test scan_counts(pad.data, pad.centers, 30) == expected
+
+    @testset "shared centers, tdim = $tdim" for tdim in 1:3
+        series = stack((pad.data, 2 .* pad.data); dims = tdim)
+        @test directional_spectra(series, pad.centers, 30; method = :sum, tdim) == map(v -> [v 2v], expected)
+    end
+
+    @testset "per-scan centers and loss cones" begin
+        flipped = reverse(pad.centers)
+        res = directional_spectra(stack((pad.data, pad.data)), [pad.centers, flipped], [30, 90]; method = :sum, tdim = 3)
+        @test isequal(res, map(hcat, scan_counts(pad.data, pad.centers, 30), scan_counts(pad.data, flipped, 90)))
+    end
+
+    @testset "without energy axis" begin
+        grid1 = EnergyAngleGrid(nothing, 0, [15, 75, 165]; layout = (:theta,), dphi = 360, dtheta = 30)
+        pad1 = angle_distribution([1, 3, 5], grid1, :pitch; B = [0, 0, 1], bins = 6, method = :sum)
+        @test scan_counts(pad1.data, pad1.centers, 30) == map(first, expected)
+        @test directional_spectra([pad1.data 2pad1.data], pad1.centers, 30; method = :sum, tdim = 2) == map(v -> [v[1], 2v[1]], expected)
+    end
+
+    series = stack((pad.data, pad.data))
+    @test directional_spectra(series, pad.centers, 30; method = :sum) == directional_spectra(series, pad.centers, 30; method = :sum, tdim = 3)
+    @test_throws DimensionMismatch directional_spectra(series, [pad.centers pad.centers], 30; method = :sum, tdim = 3) # matrix: use eachcol
+end
+
 @testset "non-finite pitch centers have no weight" begin
-    res = directional_energy_spectra([1; 100; 100;;;], [90; Inf; -Inf;;], [30]; half_sector_width = 5)
+    res = directional_spectra([1; 100; 100;;], [90, Inf, -Inf], 30; half_sector_width = 5)
     @test only(res.omni) == only(res.perp) == 1
     @test isnan(only(res.para)) && isnan(only(res.anti))
 end
