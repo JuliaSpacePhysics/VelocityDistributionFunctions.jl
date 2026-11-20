@@ -50,3 +50,9 @@ end
     res = directional_energy_spectra(S, reshape([5.0, 60.0, 120.0, 175.0], 4, 1), [10.0]; method = :sum)
     @test isequal(map(only, res), (; omni = 14.0, para = NaN, anti = 8.0, perp = 6.0))
 end
+
+@testset "non-finite pitch centers have no weight" begin
+    res = directional_energy_spectra([1; 100; 100;;;], [90; Inf; -Inf;;], [30]; half_sector_width = 5)
+    @test only(res.omni) == only(res.perp) == 1
+    @test isnan(only(res.para)) && isnan(only(res.anti))
+end

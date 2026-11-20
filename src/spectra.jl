@@ -43,7 +43,7 @@ function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_widt
         lc = loss_cone[t]
         for p in 1:n_pa
             pa = pitch_angles[p, t]
-            dΩ_buf[p] = weighted ? _dΩ(pa) : ifelse(isfinite(pa), one(T), T(NaN)) # NaN weight drops the sector
+            dΩ_buf[p] = !isfinite(pa) ? T(NaN) : weighted ? _dΩ(pa) : one(T) # NaN weight drops the sector
             mask_para[p] = T(is_parallel(pa, lc, para_tol))
             mask_anti[p] = T(is_anti_parallel(pa, lc, para_tol))
             mask_perp[p] = T(is_perpendicular(pa, lc, perp_tol))
