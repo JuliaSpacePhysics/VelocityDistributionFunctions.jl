@@ -54,6 +54,7 @@ function _bin_widths!(dx, x, period)
     return dx
 end
 
+_bin_widths(x::AbstractVector, dims; period = nothing) = _bin_widths!(similar(x, float(eltype(x))), x, period)
 function _bin_widths(x::AbstractArray, dims; period = nothing)
     dx = similar(x, float(eltype(x)))
     other = filter(!=(dims), ntuple(identity, ndims(x)))

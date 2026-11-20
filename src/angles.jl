@@ -72,13 +72,13 @@ end
 
 # `[bin, energy]` sums of `data` cells, weighted by solid angle and normalized for `:mean`, and the solid angle of
 # the finite cells summed; `[bin]` if `grid` has no energies. `binof` is not inferable (one closure type per coord), so it is used only behind the broadcast barrier.
-function _bin_cells(data, grid::EnergyAngleGrid, method, coord, edges, B, gyro_ref)
+function _bin_cells(data, grid::EnergyAngleBins, method, coord, edges, B, gyro_ref)
     binof = _cell_binner(coord, edges, B, gyro_ref)
     nbins = length(edges) - 1
     (; energy, phi, theta, dphi, dtheta, layout) = grid
     ndims(data) == length(layout) ||
-        throw(DimensionMismatch("data has $(ndims(data)) axes but grid layout $layout names $(length(layout))"))
-    edim = something(findfirst(==(:energy), layout), 0)
+        throw(DimensionMismatch("data has $(ndims(data)) axes but grid axes $layout name $(length(layout))"))
+    edim = something(findfirst(names -> :energy in names, layout), 0)
     T = promote_type(float(eltype(data)), Float64)
     num = zeros(T, nbins, edim == 0 ? 1 : size(data, edim))
     den = zero(num)

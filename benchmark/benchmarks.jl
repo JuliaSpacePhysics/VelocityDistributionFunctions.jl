@@ -24,7 +24,7 @@ let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     phi = collect(range(0.0, 360.0, length = nphi + 1)[1:nphi])
     energy = 10 .^ collect(range(log10(10.0), log10(30000.0), length = nenergy))
     scpot = zeros(nt)
-    grid = EnergyAngleGrid(energy, phi, theta; layout = (:phi, :theta, :energy))
+    grid = EnergyAngleBins(:phi => phi, :theta => theta, :energy => energy)
     B = eachrow(randn(nt, 3))
 
     g = SUITE["plasma_moments"] = BenchmarkGroup()

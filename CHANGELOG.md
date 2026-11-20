@@ -9,14 +9,14 @@
 - **Breaking**: `PAspectra` is replaced by `group_mean(data, groups; dims, weights)`, which returns one array with a group axis: `PAspectra(S, dE, mins, maxs)` → `eachslice(group_mean(S, range.(mins, maxs); dims = 2, weights = dE); dims = 2)`.
 - **Breaking**: angles follow physics spherical coordinates of the particle velocity direction. `plasma_moments`/`tmoments` previously took the latitude `θ` (SPEDAS), now the polar angle. `pitch_angle_distribution`/`tpitch_angle_distribution` previously took look directions, now velocity directions.
 - **Breaking**: `plasma_moments` requires explicit `species` and `units` keywords. A custom `species` is a [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl) `Particle` instead of `(; mass, charge)`.
-- **Breaking**: the energy-angle grid is an `EnergyAngleGrid`, and the spacecraft potential and magnetic field are keywords.
-  - `plasma_moments(dist, sc_pot, magf; kw...)` → `plasma_moments(dist.data, EnergyAngleGrid(dist.energy, dist.phi, dist.theta; layout = (:energy, :phi, :theta)); sc_pot, B = magf, kw...)`
-  - `tmoments(data, theta, phi, energy, sc_pot, magf; kw...)` → `plasma_moments(data, grid; sc_pot, B, tdim = ndims(data), kw...)`. Time-varying inputs are vectors with one value per time instead of time-first matrices, e.g. `grid = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout)`, `B = eachrow(magf)`.
-  - `edim` is replaced by the grid's `layout`, naming the axes of one scan, e.g. `layout = (:phi, :theta, :energy)`.
+- **Breaking**: energy and angle bins are an `EnergyAngleBins`, and the spacecraft potential and magnetic field are keywords.
+  - `plasma_moments(dist, sc_pot, magf; kw...)` → `plasma_moments(dist.data, EnergyAngleBins(:energy => dist.energy, :phi => dist.phi, :theta => dist.theta); sc_pot, B = magf, kw...)`
+  - `tmoments(data, theta, phi, energy, sc_pot, magf; kw...)` → `plasma_moments(data, grid; sc_pot, B, tdim = ndims(data), kw...)`. Time-varying inputs are vectors with one value per time instead of time-first matrices, e.g. `grid = EnergyAngleBins.(:phi .=> eachrow(phi), :theta => theta, :energy .=> eachrow(energy))`, `B = eachrow(magf)`.
+  - `edim` is replaced by the order of the `EnergyAngleBins` axes.
   - Bin widths of a flattened angle axis must be supplied; the estimate was wrong.
 - **Breaking**: species masses are CODATA values instead of SPEDAS's approximations.
-- **Breaking**: `pitch_angle_distribution` and `tpitch_angle_distribution` are replaced by `angle_distribution(data, grid, coord; B, ...)`, which takes an `EnergyAngleGrid` like `plasma_moments` and also bins by gyrophase, φ or θ. `:mean` is now solid-angle weighted, `:sum` gives `NaN` for bins without finite cells, and bins are returned as `edges` and `centers` instead of `pitch_angles`.
-  - `pitch_angle_distribution(vdf, B, φ, θ; kw...)` → `angle_distribution(vdf, EnergyAngleGrid(energy, φ, θ; layout = (:phi, :theta, :energy)), :pitch; B, kw...)`, or `EnergyAngleGrid(nothing, φ, θ; layout = (:phi, :theta))` for 2-D `vdf`
+- **Breaking**: `pitch_angle_distribution` and `tpitch_angle_distribution` are replaced by `angle_distribution(data, grid, coord; B, ...)`, which takes an `EnergyAngleBins` like `plasma_moments` and also bins by gyrophase, φ or θ. `:mean` is now solid-angle weighted, `:sum` gives `NaN` for bins without finite cells, and bins are returned as `edges` and `centers` instead of `pitch_angles`.
+  - `pitch_angle_distribution(vdf, B, φ, θ; kw...)` → `angle_distribution(vdf, EnergyAngleBins(:phi => φ, :theta => θ, :energy), :pitch; B, kw...)`, without `:energy` for 2-D `vdf`
   - `tpitch_angle_distribution(vdf, B, φ, θ; kw...)` with `B[3, time]` → `angle_distribution(vdf, grid, :pitch; B = eachcol(B), tdim = 4, kw...)`; time-varying angles as a vector of grids.
 - **Breaking**: `qflux` integrates each bin's solid angle exactly instead of evaluating at bin centers as SPEDAS does; for MMS FPI ions it differs from SPEDAS by up to 2%. Moments are at least `Float64`.
 
