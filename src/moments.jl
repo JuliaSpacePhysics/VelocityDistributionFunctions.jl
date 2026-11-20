@@ -70,16 +70,8 @@ Plasma moments of each slice of `data` along its time axis `tdim`; grid arrays b
 `grid`, `sc_pot` and `B` are a vector with one value per time, or, for `grid` and `sc_pot`, one value for all times.
 """
 function tmoments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = ndims(data))
-    1 <= tdim <= ndims(data) || throw(ArgumentError("tdim must be a data axis"))
-    nt = size(data, tdim)
-    nt > 0 || throw(ArgumentError("tmoments needs at least one scan"))
-    grid isa EnergyAngleGrid || _check_series(grid, nt, "grid")
+    nt = _scan_count(data, tdim, grid; B)
     sc_pot isa Number || _check_series(sc_pot, nt, "sc_pot")
-    if !isnothing(B)
-        _check_series(B, nt, "B")
-        all(b -> (b isa AbstractVector || b isa Tuple) && length(b) == 3, B) ||
-            throw(DimensionMismatch("B needs one three-component field vector per scan"))
-    end
     moment_at(i) = plasma_moments(
         selectdim(data, tdim, i), _at(grid, i);
         sc_pot = _at(sc_pot, i), B = _at(B, i), species, units
@@ -91,6 +83,21 @@ function tmoments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nd
         result[i] = moment_at(i)
     end
     return result
+end
+
+
+function _scan_count(data, tdim, grid; vectors...)
+    1 <= tdim <= ndims(data) || throw(ArgumentError("tdim must be a data axis"))
+    nt = size(data, tdim)
+    nt > 0 || throw(ArgumentError("need at least one scan"))
+    grid isa EnergyAngleGrid || _check_series(grid, nt, "grid")
+    for (name, v) in pairs(vectors)
+        isnothing(v) && continue
+        _check_series(v, nt, name)
+        all(x -> (x isa AbstractVector || x isa Tuple) && length(x) == 3, v) ||
+            throw(DimensionMismatch("$name needs one three-component vector per scan"))
+    end
+    return nt
 end
 
 function _check_series(x, nt, name)
