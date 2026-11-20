@@ -15,13 +15,14 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 
 ## API
 
+Omit `tdim` for one scan. For a series, pass its time axis explicitly (e.g. `tdim = 1` for time-first data). Array outputs put time last. A shared `EnergyAngleGrid` applies to all scans; varying geometry takes a vector of grids. Supply `B` and `gyro_ref` as one three-component vector per scan.
+
 | name | meaning |
 |---|---|
-| `angle_distribution(data, grid, coord; B, gyro_ref, bins = 12, method = :mean, tdim = nothing)` | per energy, the solid-angle-weighted mean (`method = :sum`: plain sum, for counts) of `data` over the cells whose center direction falls in each `coord` bin, as `(; data[bin, energy], solid_angle, edges, centers)`, `solid_angle` [sr] summing the finite cells of each bin. `coord` is `:pitch` (needs `B`), `:gyrophase` (needs `B` and `gyro_ref`; 0° along the perpendicular projection of `gyro_ref`, 90° along `B × gyro_ref`), `:phi` or `:theta`; `bins` is a count or edges [deg]. With `tdim`, slices along that axis are scans (`B`, `gyro_ref` one per scan) and `data` gains a trailing time axis |
+| `angle_distribution(data, grid, coord; B, gyro_ref, bins = 12, method = :mean, tdim = nothing)` | per energy, the solid-angle-weighted mean (`method = :sum`: plain sum, for counts) of `data` over the cells whose center direction falls in each `coord` bin, as `(; data[bin, energy], solid_angle, edges, centers)`, `solid_angle` [sr] summing the finite cells of each bin. `coord` is `:pitch` (needs `B`), `:gyrophase` (needs `B` and `gyro_ref`; 0° along the perpendicular projection of `gyro_ref`, 90° along `B × gyro_ref`), `:phi` or `:theta`; `bins` is a count or edges [deg] |
 | `omni_spectrum(data, grid; method = :mean, tdim = nothing)` | per energy, the solid-angle-weighted mean (`:sum`: plain sum) of `data` over all directions, as `[energy(, time)]`; a number for one scan without energies |
 | `EnergyAngleGrid(energy, phi, theta; layout, denergy, dphi, dtheta)` | spherical velocity-space grid; `layout` names the data axes, e.g. `(:phi, :theta, :energy)`; `energy = nothing` for data without an energy axis (not for moments) |
-| `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)` | moments of one distribution; field-aligned quantities when `B` is given |
-| `tmoments(data, grid; species, units, sc_pot, B, tdim = ndims(data))` | `plasma_moments` per time slice, as a `StructArray`; vector arguments give one value per time |
+| `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)` | moments as a NamedTuple for one scan or a StructArray for a series; `sc_pot` may be shared or per scan. Supplying `B` adds field-aligned quantities |
 | `convert_flux_units(data, energy, from => to; species = nothing)` | `data` converted between the `units` of `plasma_moments`; `energy` [eV] broadcasts against `data`; `species` is required between flux and phase-space density |
 | `directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)` | omni, parallel, antiparallel and perpendicular energy spectra `(; omni, para, anti, perp)` of `S[pitch, energy, time]`; `method` is `:mean` (solid-angle-weighted mean; requires `half_sector_width`) or `:sum` (unweighted sum, for counts) |
 | below | public, not exported |

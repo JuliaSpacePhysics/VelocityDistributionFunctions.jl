@@ -34,7 +34,7 @@ end
     # data is [t, φ, θ, E]; φ and energy vary with time
     grids = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout = (:phi, :theta, :energy))
     B = eachrow(mag_data)
-    moms = tmoments(data, grids; sc_pot = scpot_data, B, tdim = 1, units = :df_cm, species = :H)
+    moms = plasma_moments(data, grids; sc_pot = scpot_data, B, tdim = 1, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 2.0e-3
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 2.0e-3
@@ -85,10 +85,11 @@ end
     @test_throws DimensionMismatch plasma_moments(reshape(data, 4, 3, 3, 1), grid; kw...)
     @test_throws UndefKeywordError plasma_moments(data, grid; species = :H)
     series = reshape(data, 4, 3, 3, 1)
-    @test_throws DimensionMismatch tmoments(series, [grid, grid]; kw...)
-    @test_throws DimensionMismatch tmoments(series, grid; sc_pot = Float64[], kw...)
-    @test_throws DimensionMismatch tmoments(series, grid; B = [[1., 2.]], kw...)
-    @test_throws ArgumentError tmoments(series, grid; tdim = 5, kw...)
+    @test only(plasma_moments(series, grid; tdim = 4, kw...)) == expected
+    @test_throws DimensionMismatch plasma_moments(series, [grid, grid]; tdim = 4, kw...)
+    @test_throws DimensionMismatch plasma_moments(series, grid; tdim = 4, sc_pot = Float64[], kw...)
+    @test_throws DimensionMismatch plasma_moments(series, grid; tdim = 4, B = [[1., 2.]], kw...)
+    @test_throws ArgumentError plasma_moments(series, grid; tdim = 5, kw...)
 end
 
 @testset "Unit conversion" begin

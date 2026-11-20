@@ -6,10 +6,10 @@
 
 - **Breaking**: `PAspectra` is renamed `pitch_angle_spectra`.
 - **Breaking**: angles follow physics spherical coordinates of the particle velocity direction. `plasma_moments`/`tmoments` previously took the latitude `θ` (SPEDAS), now the polar angle. `pitch_angle_distribution`/`tpitch_angle_distribution` previously took look directions, now velocity directions.
-- **Breaking**: `plasma_moments` and `tmoments` require explicit `species` and `units` keywords. A custom `species` is a [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl) `Particle` instead of `(; mass, charge)`.
+- **Breaking**: `plasma_moments` requires explicit `species` and `units` keywords. A custom `species` is a [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl) `Particle` instead of `(; mass, charge)`.
 - **Breaking**: the energy-angle grid is an `EnergyAngleGrid`, and the spacecraft potential and magnetic field are keywords.
   - `plasma_moments(dist, sc_pot, magf; kw...)` → `plasma_moments(dist.data, EnergyAngleGrid(dist.energy, dist.phi, dist.theta; layout = (:energy, :phi, :theta)); sc_pot, B = magf, kw...)`
-  - `tmoments(data, theta, phi, energy, sc_pot, magf; kw...)` → `tmoments(data, grid; sc_pot, B, kw...)`. Time-varying inputs are vectors with one value per time instead of time-first matrices, e.g. `grid = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout)`, `B = eachrow(magf)`.
+  - `tmoments(data, theta, phi, energy, sc_pot, magf; kw...)` → `plasma_moments(data, grid; sc_pot, B, tdim = ndims(data), kw...)`. Time-varying inputs are vectors with one value per time instead of time-first matrices, e.g. `grid = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout)`, `B = eachrow(magf)`.
   - `edim` is replaced by the grid's `layout`, naming the axes of one scan, e.g. `layout = (:phi, :theta, :energy)`.
   - Bin widths of a flattened angle axis must be supplied; the estimate was wrong.
 - **Breaking**: species masses are CODATA values instead of SPEDAS's approximations.
