@@ -34,8 +34,13 @@ function EnergyAngleGrid(energy, phi, theta; layout, denergy = nothing, dphi = n
     place_energy(x) = _place(x, (:energy,), layout)
     place_phi(x) = _place(x, (:phi, :angle), layout)
     place_theta(x) = _place(x, (:theta, :angle), layout)
-    energy, phi, theta = place_energy(energy), place_phi(phi), place_theta(theta)
-    denergy = @something(place_energy(denergy), _grid_widths(energy, :energy, layout))
+    phi, theta = place_phi(phi), place_theta(theta)
+    if isnothing(energy)
+        :energy in layout && throw(ArgumentError("layout $layout has an :energy axis, so energy is required"))
+    else
+        energy = place_energy(energy)
+        denergy = @something(place_energy(denergy), _grid_widths(energy, :energy, layout))
+    end
     dphi = @something(place_phi(dphi), _grid_widths(phi, :phi, layout; period = 360))
     dtheta = @something(place_theta(dtheta), _grid_widths(theta, :theta, layout))
     _check_theta(theta, dtheta)
@@ -157,6 +162,7 @@ _as_array(A) = unsafe_wrap(Array, pointer(A), size(A))
 
 function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, charge)
     (; energy, denergy, phi, dphi, theta, dtheta) = grid
+    isnothing(energy) && throw(ArgumentError("moments need grid energies"))
     # At least Float64: central moments are differences of lab-frame moments, amplifying rounding by
     # |mftens|/|ptens| and |eflux|/|qflux| (~10² and ~10⁵ in the solar wind).
     T = promote_type(eltype(data), Float64)
