@@ -15,7 +15,7 @@ Start with the [MMS ion moments example](docs/src/moment_validation.md) to adapt
 
 ## API
 
-Omit `tdim` for one scan. For a series, pass its time axis explicitly (e.g. `tdim = 1` for time-first data). Array outputs put time last. A shared `EnergyAngleGrid` applies to all scans; varying geometry takes a vector of grids. Supply `B` and `gyro_ref` as one three-component vector per scan.
+Omit `tdim` for one scan. For a series, pass its time axis explicitly (e.g. `tdim = 1` for time-first data). Array outputs put time last. A shared `EnergyAngleGrid` applies to all scans; varying geometry takes a vector of grids. Supply `B` and `gyro_ref` as one three-component vector per scan. Other per-scan inputs are likewise vectors with one entry per scan, e.g. `eachcol(pa)` for pitch centers `pa[pitch, time]`.
 
 | name | meaning |
 |---|---|
@@ -24,7 +24,7 @@ Omit `tdim` for one scan. For a series, pass its time axis explicitly (e.g. `tdi
 | `EnergyAngleGrid(energy, phi, theta; layout, denergy, dphi, dtheta)` | spherical velocity-space grid; `layout` names the data axes, e.g. `(:phi, :theta, :energy)`; `energy = nothing` for data without an energy axis (not for moments) |
 | `plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)` | moments as a NamedTuple for one scan or a StructArray for a series; `sc_pot` may be shared or per scan. Supplying `B` adds field-aligned quantities |
 | `convert_flux_units(data, energy, from => to; species = nothing)` | `data` converted between the `units` of `plasma_moments`; `energy` [eV] broadcasts against `data`; `species` is required between flux and phase-space density |
-| `directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)` | omni, parallel, antiparallel and perpendicular energy spectra `(; omni, para, anti, perp)` of `S[pitch, energy, time]`; `method` is `:mean` (solid-angle-weighted mean; requires `half_sector_width`) or `:sum` (unweighted sum, for counts) |
+| `directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean, tdim = nothing)` | omni, parallel, antiparallel and perpendicular spectra `(; omni, para, anti, perp)` over the axes after pitch of a scan `S[pitch, rest...]`, e.g. energy spectra of `S[pitch, energy]`; a series accepts shared or per-scan pitch centers and loss cone; `method` is `:mean` (solid-angle-weighted mean; requires `half_sector_width`) or `:sum` (unweighted sum, for counts) |
 | below | public, not exported |
 | `pitch_angle_spectra(S, dE, min_channels, max_channels)` | for each channel range `min_channels[i]:max_channels[i]`, the `dE`-weighted mean of `S[pitch, energy, time]` over energy, skipping non-finite values, as `[pitch, time]` |
 

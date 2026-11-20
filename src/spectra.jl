@@ -5,7 +5,7 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
 
 
 """
-    directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
+    directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean, tdim = nothing)
 
 With `l = min(loss_cone, 180° - loss_cone)`, sectors at pitch angle `θ` are
 para if `θ < l - para_tol`, anti if `θ > 180° - l + para_tol`, perp if `l + perp_tol < θ < 180° - l - perp_tol`; omni takes all.
@@ -14,63 +14,90 @@ Sectors with non-finite flux or pitch angle are skipped; a direction left withou
 `:mean` weights sectors by solid angle `2Δθ sin θ`, or `Δθ sin Δθ` within `Δθ = half_sector_width` of 0° or 180°.
 `:sum` does not compensate for skipped sectors.
 """
-function directional_energy_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
+function directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean, tdim = nothing)
     method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))
     weighted = method === :mean
     weighted && isnothing(half_sector_width) && throw(ArgumentError("method = :mean requires half_sector_width"))
-    hsw = weighted ? half_sector_width : 0
-    n_pa, n_E, n_t = size(S)
-    T = float(promote_type(eltype(S), eltype(pitch_angles), eltype(loss_cone)))
-    omni = Matrix{T}(undef, n_E, n_t)
-    para = Matrix{T}(undef, n_E, n_t)
-    anti = Matrix{T}(undef, n_E, n_t)
-    perp = Matrix{T}(undef, n_E, n_t)
+    ndims(S) > !isnothing(tdim) || throw(DimensionMismatch("S needs a pitch axis besides tdim"))
+    Base.require_one_based_indexing(S)
+    shared = pitch_angles isa AbstractVector{<:Number}
+    T = float(promote_type(eltype(S), shared ? eltype(pitch_angles) : eltype(eltype(pitch_angles)), eltype(loss_cone)))
+    scan_size = isnothing(tdim) ? size(S) : ntuple(i -> size(S, i + (i >= tdim)), ndims(S) - 1)
+    n_pa, spectrum_size = first(scan_size), Base.tail(scan_size)
+    weight = _sector_weight(T, weighted ? half_sector_width : 0, weighted)
+    buf = (; dΩ = Vector{T}(undef, n_pa), para = Vector{T}(undef, n_pa), anti = Vector{T}(undef, n_pa), perp = Vector{T}(undef, n_pa))
+    scan!(out, t, s, centers, lc) = _directional_scan!(out, t, buf, s, centers, lc, weight, para_tol, perp_tol, weighted)
+    n_t = isnothing(tdim) ? 1 : _scan_count(S, tdim)
+    _check_pitch_angles(pitch_angles, n_pa, n_t, !isnothing(tdim))
+    if isnothing(tdim)
+        loss_cone isa Number || throw(DimensionMismatch("one scan takes a scalar loss cone"))
+        out = ntuple(_ -> Array{T}(undef, spectrum_size), 4)
+        scan!(out, 1, S, pitch_angles, loss_cone)
+        return _spectra_tuple(isempty(spectrum_size) ? map(only, out) : out)
+    end
+    loss_cone isa Number || _check_series(loss_cone, n_t, "loss_cone")
+    outs = ntuple(_ -> Array{T}(undef, spectrum_size..., n_t), 4)
+    _foreach_scan(eachslice(S; dims = tdim)) do t, s
+        scan!(outs, t, s, shared ? pitch_angles : pitch_angles[t], _at(loss_cone, t))
+    end
+    return _spectra_tuple(outs)
+end
 
+_spectra_tuple(out) = NamedTuple{(:omni, :para, :anti, :perp)}(out)
+# Function barrier: the slice type depends on the runtime `tdim`.
+_foreach_scan(f, scans) = foreach(f, eachindex(scans), scans)
+
+# Pitch centers are one vector of `n_pa` angles shared by all scans or, in a series, one such vector per scan.
+function _check_pitch_angles(pitch_angles, n_pa, n_t, series)
+    per_scan = series && !(pitch_angles isa AbstractVector{<:Number})
+    per_scan && _check_series(pitch_angles, n_t, "pitch_angles")
+    all(c -> axes(c, 1) == Base.OneTo(n_pa), per_scan ? pitch_angles : (pitch_angles,)) ||
+        throw(DimensionMismatch("pitch_angles needs $n_pa centers per scan"))
+    return
+end
+
+# Solid-angle weight of the sector at pitch center `pa` [deg]; NaN for a non-finite center drops the sector.
+function _sector_weight(::Type{T}, hsw, weighted) where {T}
     Δθ = T(deg2rad(hsw))
     dΩ_edge = T(Δθ * sin(Δθ))
-    edge_lo = T(hsw)
-    edge_hi = T(180 - hsw)
-    two_Δθ = 2Δθ
-    _dΩ(pa) = ifelse(pa < edge_lo || pa > edge_hi, dΩ_edge, two_Δθ * T(sind(pa)))
+    edge_lo, edge_hi = T(hsw), T(180 - hsw)
+    return pa -> !isfinite(pa) ? T(NaN) : !weighted ? one(T) :
+        ifelse(pa < edge_lo || pa > edge_hi, dΩ_edge, 2Δθ * T(sind(pa)))
+end
+
+# Writes the `(omni, para, anti, perp)` spectra of one scan `S[pitch, rest...]` into `out[rest..., t]`; `buf` holds per-sector scratch.
+function _directional_scan!((omni, para, anti, perp), t, buf, S, centers, lc, weight, para_tol, perp_tol, weighted)
+    T = eltype(omni)
     _finish(n, d) = weighted ? n / d : ifelse(iszero(d), T(NaN), n)
-
-    dΩ_buf = Vector{T}(undef, n_pa)
-    mask_para = Vector{T}(undef, n_pa)
-    mask_anti = Vector{T}(undef, n_pa)
-    mask_perp = Vector{T}(undef, n_pa)
-
-    @inbounds for t in 1:n_t
-        lc = loss_cone[t]
-        for p in 1:n_pa
-            pa = pitch_angles[p, t]
-            dΩ_buf[p] = !isfinite(pa) ? T(NaN) : weighted ? _dΩ(pa) : one(T) # NaN weight drops the sector
-            mask_para[p] = T(is_parallel(pa, lc, para_tol))
-            mask_anti[p] = T(is_anti_parallel(pa, lc, para_tol))
-            mask_perp[p] = T(is_perpendicular(pa, lc, perp_tol))
-        end
-        for E in 1:n_E
-            no = na = np = nx = zero(T) # numerator
-            do_ = da = dp = dx = zero(T) # denominator
-            @simd for p in 1:n_pa
-                s = S[p, E, t]
-                d = dΩ_buf[p]
-                sd = s * d
-                valid = isfinite(sd)
-                contrib = ifelse(valid, sd, zero(sd))
-                dv = ifelse(valid, d, zero(d))
-                mp = mask_para[p]; ma = mask_anti[p]; mx = mask_perp[p]
-                no += contrib;       do_ += dv
-                np += contrib * mp;  dp += dv * mp
-                na += contrib * ma;  da += dv * ma
-                nx += contrib * mx;  dx += dv * mx
-            end
-            omni[E, t] = _finish(no, do_)
-            para[E, t] = _finish(np, dp)
-            anti[E, t] = _finish(na, da)
-            perp[E, t] = _finish(nx, dx)
-        end
+    (; dΩ) = buf
+    @inbounds for p in eachindex(dΩ)
+        pa = centers[p]
+        dΩ[p] = weight(pa)
+        buf.para[p] = T(is_parallel(pa, lc, para_tol))
+        buf.anti[p] = T(is_anti_parallel(pa, lc, para_tol))
+        buf.perp[p] = T(is_perpendicular(pa, lc, perp_tol))
     end
-    return (; omni, para, anti, perp)
+    @inbounds for E in CartesianIndices(Base.tail(axes(S)))
+        no = na = np = nx = zero(T) # numerator
+        do_ = da = dp = dx = zero(T) # denominator
+        @simd for p in eachindex(dΩ)
+            d = dΩ[p]
+            sd = S[p, E] * d
+            valid = isfinite(sd)
+            contrib = ifelse(valid, sd, zero(sd))
+            dv = ifelse(valid, d, zero(d))
+            mp = buf.para[p]; ma = buf.anti[p]; mx = buf.perp[p]
+            no += contrib;       do_ += dv
+            np += contrib * mp;  dp += dv * mp
+            na += contrib * ma;  da += dv * ma
+            nx += contrib * mx;  dx += dv * mx
+        end
+        omni[E, t] = _finish(no, do_)
+        para[E, t] = _finish(np, dp)
+        anti[E, t] = _finish(na, da)
+        perp[E, t] = _finish(nx, dx)
+    end
+    return
 end
 
 function pitch_angle_spectra(S, dE, min_channels, max_channels)

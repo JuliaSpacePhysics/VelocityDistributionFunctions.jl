@@ -1,6 +1,6 @@
 using BenchmarkTools
 using VelocityDistributionFunctions
-using VelocityDistributionFunctions: directional_energy_spectra, pitch_angle_spectra, sort_flux_by_pitch_angle!
+using VelocityDistributionFunctions: directional_spectra, pitch_angle_spectra, sort_flux_by_pitch_angle!
 using JLD2
 
 const SUITE = BenchmarkGroup()
@@ -14,7 +14,7 @@ let
     params = elfin_des_params(size(pa, 1))
 
     g = SUITE["spectra"] = BenchmarkGroup()
-    g["directional_energy_spectra"] = @benchmarkable directional_energy_spectra($S, $pa, $LC; $params...)
+    g["directional_spectra"] = @benchmarkable directional_spectra($S, $(eachcol(pa)), $LC; tdim = 3, $params...)
 
     S_sorted = (s = copy(S); sort_flux_by_pitch_angle!(s, pa); s)
     g["pitch_angle_spectra"] = @benchmarkable pitch_angle_spectra($S_sorted, $ELFIN_EPD_dE, $(ELFIN_PA_CHANNELS)...)

@@ -85,8 +85,7 @@ end
 
 
 function _scan_count(data, tdim, grid; vectors...)
-    1 <= tdim <= ndims(data) || throw(ArgumentError("tdim must be a data axis"))
-    nt = size(data, tdim)
+    nt = _scan_count(data, tdim)
     nt > 0 || throw(ArgumentError("need at least one scan"))
     grid isa EnergyAngleGrid || _check_series(grid, nt, "grid")
     for (name, v) in pairs(vectors)
@@ -96,6 +95,11 @@ function _scan_count(data, tdim, grid; vectors...)
             throw(DimensionMismatch("$name needs one three-component vector per scan"))
     end
     return nt
+end
+
+function _scan_count(data, tdim)
+    tdim isa Integer && 1 <= tdim <= ndims(data) || throw(ArgumentError("tdim must be a data axis"))
+    return size(data, tdim)
 end
 
 function _check_series(x, nt, name)
