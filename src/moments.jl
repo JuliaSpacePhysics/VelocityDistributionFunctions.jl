@@ -8,46 +8,6 @@ include("moments/helpers.jl")
 include("moments/compute.jl")
 
 """
-    EnergyAngleGrid(energy, phi, theta; layout, denergy, dphi, dtheta)
-
-Bin centers and widths of a spherical velocity-space grid: `energy` [eV] and the velocity direction `phi`, `theta` [deg].
-
-`layout` names the data axes, from `:energy`, `:phi`, `:theta` and `:angle` (flattened direction), e.g. `(:phi, :theta, :energy)`.
-A vector lies along its named axis; other arrays broadcast against the data. Missing widths are estimated along each
-coordinate's own axis, so a flattened `:angle` axis needs them supplied. Estimated energy widths are midpoints between
-centers, which overestimate the end bins of a log grid (by 10% for a 20% step); prefer the instrument's `denergy`.
-"""
-struct EnergyAngleGrid{E, P, T, DE, DP, DT, N}
-    energy::E
-    phi::P
-    theta::T
-    denergy::DE
-    dphi::DP
-    dtheta::DT
-    layout::NTuple{N, Symbol}
-end
-
-function EnergyAngleGrid(energy, phi, theta; layout, denergy = nothing, dphi = nothing, dtheta = nothing)
-    allunique(layout) && all(in((:energy, :phi, :theta, :angle)), layout) ||
-        throw(ArgumentError("layout names distinct axes from :energy, :phi, :theta, :angle; got $layout"))
-    layout = Tuple(layout)
-    place_energy(x) = _place(x, (:energy,), layout)
-    place_phi(x) = _place(x, (:phi, :angle), layout)
-    place_theta(x) = _place(x, (:theta, :angle), layout)
-    phi, theta = place_phi(phi), place_theta(theta)
-    if isnothing(energy)
-        :energy in layout && throw(ArgumentError("layout $layout has an :energy axis, so energy is required"))
-    else
-        energy = place_energy(energy)
-        denergy = @something(place_energy(denergy), _grid_widths(energy, :energy, layout))
-    end
-    dphi = @something(place_phi(dphi), _grid_widths(phi, :phi, layout; period = 360))
-    dtheta = @something(place_theta(dtheta), _grid_widths(theta, :theta, layout))
-    _check_theta(theta, dtheta)
-    return EnergyAngleGrid(energy, phi, theta, denergy, dphi, dtheta, layout)
-end
-
-"""
     plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
 
 Moments of one scan as a NamedTuple. With `tdim`, return a StructArray with one record per scan along that axis.
@@ -65,9 +25,9 @@ Align ancillary measurements to the scan intervals before calling.
 function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
     (; mass, charge) = _species(species)
     coefficient, E_exp = _conversion_coeff(units, :eflux, mass)
-    function scan(d, g::EnergyAngleGrid, pot, field)
+    function scan(d, g::EnergyAngleBins, pot, field)
         ndims(d) == length(g.layout) ||
-            throw(DimensionMismatch("scan has $(ndims(d)) axes but grid layout $(g.layout) names $(length(g.layout))"))
+            throw(DimensionMismatch("scan has $(ndims(d)) axes but grid axes $(g.layout) name $(length(g.layout))"))
         return _plasma_moments(d, g, pot, field; coefficient, E_exp, mass, charge)
     end
     isnothing(tdim) && return scan(data, grid, sc_pot, B)
@@ -83,11 +43,10 @@ function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdi
     return result
 end
 
-
 function _scan_count(data, tdim, grid; vectors...)
     nt = _scan_count(data, tdim)
     nt > 0 || throw(ArgumentError("need at least one scan"))
-    grid isa EnergyAngleGrid || _check_series(grid, nt, "grid")
+    grid isa EnergyAngleBins || _check_series(grid, nt, "grid")
     for (name, v) in pairs(vectors)
         isnothing(v) && continue
         _check_series(v, nt, name)
@@ -109,31 +68,6 @@ end
 
 _at(x, i) = x
 _at(x::AbstractVector, i) = x[i]
-
-# A vector lies along the first `layout` axis named in `names`.
-_place(x, names, layout) = x
-function _place(x::AbstractVector, names, layout)
-    d = findfirst(in(names), layout)
-    isnothing(d) && throw(ArgumentError("layout $layout has no $(join(names, " or ")) axis"))
-    return reshape(x, ntuple(i -> i == d ? length(x) : 1, length(layout)))
-end
-
-function _check_theta(theta, dtheta)
-    tol = 180 * sqrt(eps(float(promote_type(eltype(theta), eltype(dtheta)))))
-    inside(θ, dθ) = -tol <= θ - dθ / 2 && θ + dθ / 2 <= 180 + tol
-    all(Broadcast.broadcasted(inside, theta, dtheta)) || throw(ArgumentError(
-        "theta bins θ ± dθ/2 must lie within [0, 180]: θ is the polar angle of the velocity direction"
-    ))
-    return nothing
-end
-
-# Only along the coordinate's own axis: centers of a flattened `:angle` axis are not ordered.
-function _grid_widths(x, name, layout; period = nothing)
-    d = findfirst(==(name), layout)
-    (isnothing(d) || size(x, d) < 2) &&
-        throw(ArgumentError("supply the bin widths of $name: its centers do not vary along a :$name axis of layout $layout"))
-    return _bin_widths(x, d; period)
-end
 
 # Size of the broadcast of `xs` padded to `ndims(data)`; each must broadcast against `data`.
 function _bshape(data, xs...)
@@ -159,7 +93,7 @@ _as_array(A) = unsafe_wrap(Array, pointer(A), size(A))
 
 function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, charge)
     (; energy, denergy, phi, dphi, theta, dtheta) = grid
-    isnothing(energy) && throw(ArgumentError("moments need grid energies"))
+    energy isa Union{Nothing, Missing} && throw(ArgumentError("moments need grid energies"))
     # At least Float64: central moments are differences of lab-frame moments, amplifying rounding by
     # |mftens|/|ptens| and |eflux|/|qflux| (~10² and ~10⁵ in the solar wind).
     T = promote_type(eltype(data), Float64)

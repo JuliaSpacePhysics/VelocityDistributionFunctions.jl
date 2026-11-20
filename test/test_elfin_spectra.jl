@@ -54,7 +54,7 @@ end
 
 @testset "directional_spectra of an angle_distribution" begin
     # counts at pitch 15° (para), 75° (perp) and 165° (anti) for two energies
-    grid = EnergyAngleGrid([1, 2], 0, [15, 75, 165]; layout = (:theta, :energy), dphi = 360, dtheta = 30)
+    grid = EnergyAngleBins(:theta => [15, 75, 165], :energy => [1, 2]; dtheta = 30)
     pad = angle_distribution([1 2; 3 4; 5 6], grid, :pitch; B = [0, 0, 1], bins = 6, method = :sum)
     scan_counts(S, centers, lc) = directional_spectra(S, centers, lc; method = :sum)
     expected = (; omni = [9, 12], para = [1, 2], anti = [5, 6], perp = [3, 4])
@@ -72,7 +72,7 @@ end
     end
 
     @testset "without energy axis" begin
-        grid1 = EnergyAngleGrid(nothing, 0, [15, 75, 165]; layout = (:theta,), dphi = 360, dtheta = 30)
+        grid1 = EnergyAngleBins(:theta => [15, 75, 165]; dtheta = 30)
         pad1 = angle_distribution([1, 3, 5], grid1, :pitch; B = [0, 0, 1], bins = 6, method = :sum)
         @test scan_counts(pad1.data, pad1.centers, 30) == map(first, expected)
         @test directional_spectra([pad1.data 2pad1.data], pad1.centers, 30; method = :sum, tdim = 2) == map(v -> [v[1], 2v[1]], expected)

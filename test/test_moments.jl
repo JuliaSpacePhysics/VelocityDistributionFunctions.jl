@@ -32,7 +32,7 @@ end
     phi = (mms1_dis_dist_brst["phi"] .+ 180) .% 360
     energy = mms1_dis_dist_brst["energy"]
     # data is [t, φ, θ, E]; φ and energy vary with time
-    grids = EnergyAngleGrid.(eachrow(energy), eachrow(phi), Ref(theta); layout = (:phi, :theta, :energy))
+    grids = EnergyAngleBins.(:phi .=> eachrow(phi), :theta => theta, :energy .=> eachrow(energy))
     B = eachrow(mag_data)
     moms = plasma_moments(data, grids; sc_pot = scpot_data, B, tdim = 1, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 2.0e-3
@@ -59,29 +59,33 @@ end
     widths = [5., 7., 9.]
     data = reshape(collect(1.0:36), 4, 3, 3)  # [φ, θ, E]
     kw = (; units = :eflux, species = :H)
-    layout = (:phi, :theta, :energy)
-    grid = EnergyAngleGrid(energy, phi, theta; layout, denergy = widths)
+    grid = EnergyAngleBins(:phi => phi, :theta => theta, :energy => energy; denergy = widths)
+    # literal axis names in user code infer the grid type
+    grid_of(φ, θ, E) = EnergyAngleBins(:energy => E, (:phi, :theta) => (φ, θ); dphi = 90, dtheta = 60)
+    @inferred grid_of(phi, fill(90.0, 4), energy)
+    @inferred (E -> EnergyAngleBins(:phi => phi, :theta => theta, :energy => E))(energy)
     expected = plasma_moments(data, grid; kw...)
     same(m) = m.density ≈ expected.density && m.velocity ≈ expected.velocity && m.ptens ≈ expected.ptens && m.qflux ≈ expected.qflux
 
-    @test same(plasma_moments(permutedims(data, (3, 1, 2)), EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta), denergy = widths); kw...))
-    @test same(plasma_moments(reverse(data; dims = 3), EnergyAngleGrid(reverse(energy), phi, theta; layout, denergy = reverse(widths)); kw...))
+    @test same(plasma_moments(permutedims(data, (3, 1, 2)), EnergyAngleBins(:energy => energy, :phi => phi, :theta => theta; denergy = widths); kw...))
+    @test same(plasma_moments(reverse(data; dims = 3), EnergyAngleBins(:phi => phi, :theta => theta, :energy => reverse(energy); denergy = reverse(widths)); kw...))
     gappy, zeroed = copy(data), copy(data)
     gappy[2, 2, 2], zeroed[2, 2, 2] = NaN, 0
     @test plasma_moments(gappy, grid; kw...) == plasma_moments(zeroed, grid; kw...)
     @test all(x -> all(isnan, x), plasma_moments(fill(NaN, size(data)), grid; B = [1.0, 2, 3], kw...))
     full(x) = x .* ones(size(data))
     (; dphi, dtheta) = grid
-    @test same(plasma_moments(data, EnergyAngleGrid(full(grid.energy), full(grid.phi), full(grid.theta); layout, denergy = full(grid.denergy), dphi = full(dphi), dtheta = full(dtheta)); kw...))
+    @test same(plasma_moments(data, EnergyAngleBins(:phi => full(grid.phi), :theta => full(grid.theta), :energy => full(grid.energy); denergy = full(grid.denergy), dphi = full(dphi), dtheta = full(dtheta)); kw...))
     # flattened angle axis: widths are not estimable from centers
     flat(x) = vec(x .* ones(4, 3))
-    flat_layout = (:angle, :energy)
-    @test same(plasma_moments(reshape(data, 12, 3), EnergyAngleGrid(energy, flat(grid.phi), flat(grid.theta); layout = flat_layout, denergy = widths, dphi = flat(dphi), dtheta = flat(dtheta)); kw...))
-    @test_throws ArgumentError EnergyAngleGrid(energy, [0., 90, 180, 270], [45., 135, 45, 135]; layout = flat_layout)
-    @test_throws ArgumentError EnergyAngleGrid(energy, phi, theta; layout = (:phi, :energy))
-    @test_throws ArgumentError EnergyAngleGrid(energy, phi, theta .- 90; layout)  # latitude
-    @test_throws ArgumentError EnergyAngleGrid(energy, phi, [5., 90., 170.]; layout, dtheta = 30)
-    @test_throws DimensionMismatch plasma_moments(data, EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta), denergy = widths); kw...)
+    @test same(plasma_moments(reshape(data, 12, 3), EnergyAngleBins((:phi, :theta) => (flat(grid.phi), flat(grid.theta)), :energy => energy; denergy = widths, dphi = flat(dphi), dtheta = flat(dtheta)); kw...))
+    @test_throws ArgumentError EnergyAngleBins((:phi, :theta) => ([0., 90, 180, 270], [45., 135, 45, 135]), :energy => energy)
+    @test_throws ArgumentError EnergyAngleBins(:phi => phi, :phi => theta, :energy => energy)
+    @test_throws ArgumentError EnergyAngleBins(:phi => phi, :theta; dphi = 90)
+    @test_throws ArgumentError EnergyAngleBins(:energy => energy, :theta => theta; dphi = 90)
+    @test_throws ArgumentError EnergyAngleBins(:phi => phi, :theta => theta .- 90, :energy => energy)  # latitude
+    @test_throws ArgumentError EnergyAngleBins(:phi => phi, :theta => [5., 90., 170.], :energy => energy; dtheta = 30)
+    @test_throws DimensionMismatch plasma_moments(data, EnergyAngleBins(:energy => energy, :phi => phi, :theta => theta; denergy = widths); kw...)
     @test_throws DimensionMismatch plasma_moments(reshape(data, 4, 3, 3, 1), grid; kw...)
     @test_throws UndefKeywordError plasma_moments(data, grid; species = :H)
     series = reshape(data, 4, 3, 3, 1)
@@ -102,15 +106,19 @@ end
     @test_throws ArgumentError convert_flux_units(f, E, :flux => :df_cm)
 end
 
-@testset "Gyrotropic grid" begin
-    # One full-circle φ bin is exact: the same as 8 φ bins of a φ-independent distribution
+@testset "Angles without an axis span their full range" begin
+    # exact: the same as φ (and θ) bins of a φ- (and θ-) independent distribution
     energy = [10.0, 30.0, 100.0, 300.0]
     theta = collect(15.0:30.0:165.0)
     phi = collect(22.5:45.0:337.5)
     f(E, θ) = exp(-E / 100) * (1 + 0.8cosd(θ))
     kw = (; units = :eflux, species = :H)
-    gyro = plasma_moments([f(E, θ) for E in energy, θ in theta], EnergyAngleGrid(energy, 0, theta; layout = (:energy, :theta), dphi = 360); kw...)
-    full = plasma_moments([f(E, θ) for E in energy, φ in phi, θ in theta], EnergyAngleGrid(energy, phi, theta; layout = (:energy, :phi, :theta)); kw...)
+    gyro = plasma_moments([f(E, θ) for E in energy, θ in theta], EnergyAngleBins(:energy => energy, :theta => theta); kw...)
+    full = plasma_moments([f(E, θ) for E in energy, φ in phi, θ in theta], EnergyAngleBins(:energy => energy, :phi => phi, :theta => theta); kw...)
+    g(E) = exp(-E / 100)
+    omni = plasma_moments(g.(energy), EnergyAngleBins(:energy => energy); kw...)
+    @test omni.density ≈ plasma_moments([g(E) for E in energy, φ in phi, θ in theta], EnergyAngleBins(:energy => energy, :phi => phi, :theta => theta); kw...).density
+    @test maximum(abs, omni.velocity) < 1.0e-8 * omni.vthermal
     for k in (:density, :velocity, :ptens, :qflux)
         @test getfield(gyro, k) ≈ getfield(full, k)
     end
@@ -123,9 +131,8 @@ end
     theta = collect(2.8125:5.625:180)
     w2(E, φ, θ) = (sqrt(E / 10) * sind(θ) * cosd(φ) - sqrt(40))^2 + E / 10 * (sind(θ)^2 * sind(φ)^2 + cosd(θ)^2)
     data = [E^2 * exp(-w2(E, φ, θ)) for E in energy, φ in phi, θ in theta]  # drift energy 400 eV, thermal 10 eV
-    layout = (:energy, :phi, :theta)
     kw = (; units = :eflux, species = :H)
-    m64 = plasma_moments(Float64.(Float32.(data)), EnergyAngleGrid(energy, phi, theta; layout); kw...)
-    m32 = plasma_moments(Float32.(data), EnergyAngleGrid(Float32.(energy), Float32.(phi), Float32.(theta); layout); kw...)
+    m64 = plasma_moments(Float64.(Float32.(data)), EnergyAngleBins(:energy => energy, :phi => phi, :theta => theta); kw...)
+    m32 = plasma_moments(Float32.(data), EnergyAngleBins(:energy => Float32.(energy), :phi => Float32.(phi), :theta => Float32.(theta)); kw...)
     @test m32.qflux ≈ m64.qflux rtol = 1.0e-5
 end

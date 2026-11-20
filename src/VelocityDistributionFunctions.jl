@@ -9,11 +9,12 @@ using StructArrays: StructArray
 
 include("unit_conversion.jl")
 include("spectra.jl")
+include("bins.jl")
 include("moments.jl")
 include("angles.jl")
 
 export angle_distribution, omni_spectrum
 export directional_spectra, group_mean
-export plasma_moments, EnergyAngleGrid, convert_flux_units
+export plasma_moments, EnergyAngleBins, convert_flux_units
 
 end

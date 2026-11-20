@@ -5,11 +5,11 @@ using VelocityDistributionFunctions
 mms_φ = 5.625:11.25:360
 mms_θ = 5.625:11.25:180
 mms_E = exp10.(range(1, 4.5; length = 32))
-mms_grid = EnergyAngleGrid(mms_E, mms_φ, mms_θ; layout = (:phi, :theta, :energy))
+mms_grid = EnergyAngleBins(:phi => mms_φ, :theta => mms_θ, :energy => mms_E)
 B_tilted = [0.3, -0.5, 0.8]
 
 # 1° cells, so that bins of 15° hold whole θ rows when B ∥ ẑ
-fine_grid = EnergyAngleGrid([1.0, 2.0], 0.5:359.5, 0.5:179.5; layout = (:phi, :theta, :energy))
+fine_grid = EnergyAngleBins(:phi => 0.5:359.5, :theta => 0.5:179.5, :energy => [1.0, 2.0])
 
 @testset "isotropic f is flat in every coordinate" begin
     f = reshape(mms_E .^ -2, 1, 1, :)
@@ -18,14 +18,12 @@ fine_grid = EnergyAngleGrid([1.0, 2.0], 0.5:359.5, 0.5:179.5; layout = (:phi, :t
         @test angle_distribution(data, mms_grid, coord; kw...).data ≈ repeat(vec(f)', 12)
     end
     @test omni_spectrum(data, mms_grid) ≈ vec(f)
+    @test omni_spectrum(data, EnergyAngleBins(:phi => mms_φ, :theta => mms_θ, :energy)) == omni_spectrum(data, mms_grid)
 end
 
 @testset "flattened angle axis matches (φ, θ, E) layout" begin
     φθ = vec(collect(Iterators.product(mms_φ, mms_θ)))
-    rows(x) = repeat(permutedims(x), 32)
-    flat_grid = EnergyAngleGrid(
-        mms_E, rows(first.(φθ)), rows(last.(φθ)); layout = (:energy, :angle), dphi = 11.25, dtheta = 11.25
-    )
+    flat_grid = EnergyAngleBins(:energy => mms_E, (:phi, :theta) => (first.(φθ), last.(φθ)); dphi = 11.25, dtheta = 11.25)
     cosα = [cosd(φ) * sind(θ) for φ in mms_φ, θ in mms_θ, _ in mms_E]
     @test angle_distribution(cosα, mms_grid, :pitch; B = [1, 0, 0]).data ≈
         angle_distribution(permutedims(reshape(cosα, :, 32)), flat_grid, :pitch; B = [1, 0, 0]).data
@@ -49,7 +47,7 @@ end
 end
 
 @testset "no energy axis; pitch exactly 0° and 180°" begin
-    grid = EnergyAngleGrid(nothing, 0:90:270, [30, 90, 150]; layout = (:phi, :theta), dphi = 90, dtheta = 60)
+    grid = EnergyAngleBins(:phi => 0:90:270, :theta => [30, 90, 150]; dphi = 90, dtheta = 60)
     data = zeros(Int, 4, 3)
     data[1, 2] = 2   # φ = 0°, θ = 90°: along B
     data[3, 2] = 4   # φ = 180°: against B
@@ -57,8 +55,9 @@ end
     @test isequal(angle_distribution(data, grid, :pitch; B = [1, 0, 0], bins = 6, method = :sum).data, [2, NaN, 0, 0, 0, 4])  # no cell at pitch 30°–60°
     @test omni_spectrum(data, grid; method = :sum) == 6
     # B along (θ = 78°, φ = 0°) gives a direction cosine of 1 + eps
-    grid78 = EnergyAngleGrid(nothing, [0, 180], 78; layout = (:phi, :theta), dphi = 10, dtheta = 10)
+    grid78 = EnergyAngleBins(:phi => [0, 180], :theta => 78; dphi = 10, dtheta = 10)
     @test angle_distribution([1; 3;;], grid78, :pitch; B = [sind(78), 0, cosd(78)], bins = 2).data == [1, 3]
+    @test_throws ArgumentError plasma_moments(ones(4, 3, 2), EnergyAngleBins(:phi => 0:90:270, :theta => [30, 90, 150], :energy); units = :eflux, species = :H)
 end
 
 @testset "counts, non-finite cells and undefined B" begin
@@ -76,7 +75,7 @@ end
 @testset "time series" begin
     data = rand(32, 16, 32, 3)
     Bs = [[1, 0, 0], [0, 1, 1], B_tilted]
-    grids = [EnergyAngleGrid(mms_E .* k, mms_φ, mms_θ; layout = (:phi, :theta, :energy)) for k in 1:3]
+    grids = [EnergyAngleBins(:phi => mms_φ, :theta => mms_θ, :energy => mms_E .* k) for k in 1:3]
     res = angle_distribution(data, grids, :pitch; B = Bs, tdim = 4)
     @test size(res.data) == size(res.solid_angle) == (12, 32, 3)
     @test res.data[:, :, 2] == angle_distribution(data[:, :, :, 2], grids[2], :pitch; B = Bs[2]).data
