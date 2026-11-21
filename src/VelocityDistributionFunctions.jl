@@ -13,9 +13,11 @@ include("series.jl")
 include("spectra.jl")
 include("moments.jl")
 include("angles.jl")
+include("gyroaverage.jl")
 
 export angle_distribution, omni_spectrum
 export directional_spectra, group_mean
 export plasma_moments, EnergyAngleBins, convert_flux_units
+export gyroaverage
 
 end

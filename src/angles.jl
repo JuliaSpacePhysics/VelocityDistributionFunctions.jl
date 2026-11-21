@@ -29,16 +29,21 @@ function _coord_span(coord)
     throw(ArgumentError("coord must be :pitch, :gyrophase, :phi or :theta; got :$coord"))
 end
 
-_angle_edges(coord, n::Integer) = range(0.0, _coord_span(coord); length = n + 1)
-function _angle_edges(coord, edges::AbstractVector)
-    _coord_span(coord)
-    length(edges) >= 2 && issorted(edges) ||
+function _angle_edges(coord, n::Integer)
+    n > 0 || throw(ArgumentError("bin count must be positive, got $n"))
+    return range(0.0, _coord_span(coord); length = n + 1)
+end
+_angle_edges(coord, edges) = (_coord_span(coord); _check_edges(edges))
+
+function _check_edges(edges::AbstractVector)
+    length(edges) >= 2 && all(i -> edges[i] < edges[i + 1], firstindex(edges):(lastindex(edges) - 1)) ||
         throw(ArgumentError("bin edges must be ≥ 2 increasing values, got $edges"))
     return edges
 end
+_check_edges(edges) = throw(ArgumentError("bin edges must be a vector, got $(typeof(edges))"))
 
 # Bin of `x`, 0 if outside the edges
-function _angle_bin(edges, x)
+function _bin(edges, x)
     n = length(edges)
     b = searchsortedlast(edges, x)
     b == n && x == last(edges) && return n - 1
@@ -55,21 +60,21 @@ end
 
 # `(θ, φ) -> bin` of a cell's center direction; bin 0 everywhere if the field-aligned frame is undefined.
 function _cell_binner(coord, edges, B, gyro_ref)
-    coord === :theta && return (θ, φ) -> _angle_bin(edges, θ)
-    coord === :phi && return (θ, φ) -> _angle_bin(edges, _wrap(φ, first(edges)))
+    coord === :theta && return (θ, φ) -> _bin(edges, θ)
+    coord === :phi && return (θ, φ) -> _bin(edges, _wrap(φ, first(edges)))
     isnothing(B) && throw(ArgumentError(":$coord needs the magnetic field B"))
     b = SVector{3}(B)
     if coord === :pitch
         b̂ = normalize(b)
         all(isfinite, b̂) || return Returns(0)
-        return (θ, φ) -> _angle_bin(edges, acosd(clamp(_unit(θ, φ) ⋅ b̂, -1, 1)))
+        return (θ, φ) -> _bin(edges, acosd(clamp(_unit(θ, φ) ⋅ b̂, -1, 1)))
     end
     isnothing(gyro_ref) && throw(ArgumentError(":gyrophase requires gyro_ref"))
     R = transpose(_rot_mat(b, SVector{3}(gyro_ref)))
     all(isfinite, R) || return Returns(0)
     return function (θ, φ)
         u = R * _unit(θ, φ)
-        return _angle_bin(edges, _wrap(atand(u[2], u[1]), first(edges)))
+        return _bin(edges, _wrap(atand(u[2], u[1]), first(edges)))
     end
 end
 
