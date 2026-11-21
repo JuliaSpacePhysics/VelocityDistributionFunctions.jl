@@ -5,7 +5,7 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
 
 
 """
-    directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean, tdim = nothing)
+    directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
 
 With `l = min(loss_cone, 180° - loss_cone)`, sectors at pitch angle `θ` are
 para if `θ < l - para_tol`, anti if `θ > 180° - l + para_tol`, perp if `l + perp_tol < θ < 180° - l - perp_tol`; omni takes all.
@@ -14,46 +14,43 @@ Sectors with non-finite flux or pitch angle are skipped; a direction left withou
 `:mean` weights sectors by solid angle `2Δθ sin θ`, or `Δθ sin Δθ` within `Δθ = half_sector_width` of 0° or 180°.
 `:sum` does not compensate for skipped sectors.
 """
-function directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean, tdim = nothing)
+function directional_spectra(S, pitch_angles, loss_cone; kw...)
+    loss_cone isa Number || throw(DimensionMismatch("one scan takes a scalar loss cone"))
+    pitch_angles isa AbstractVector{<:Number} || throw(DimensionMismatch("one scan takes one vector of pitch centers"))
+    out = _directional_spectra((S,), pitch_angles, loss_cone; kw...)
+    return map(x -> ndims(x) == 1 ? only(x) : dropdims(x; dims = ndims(x)), out)
+end
+
+function directional_spectra(S::_Series, pitch_angles, loss_cone; kw...)
+    Base.require_one_based_indexing(S)
+    n_t = length(S)
+    pitch_angles isa AbstractVector{<:Number} || _check_series(pitch_angles, n_t, "pitch_angles")
+    loss_cone isa Number || _check_series(loss_cone, n_t, "loss_cone")
+    return _directional_spectra(S, pitch_angles, loss_cone; kw...)
+end
+
+# `pitch_angles` and `loss_cone` are shared or one entry per scan of `scans`; outputs are `[rest..., time]`.
+function _directional_spectra(scans, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
     method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))
     weighted = method === :mean
     weighted && isnothing(half_sector_width) && throw(ArgumentError("method = :mean requires half_sector_width"))
-    ndims(S) > !isnothing(tdim) || throw(DimensionMismatch("S needs a pitch axis besides tdim"))
-    Base.require_one_based_indexing(S)
+    isempty(scans) && throw(ArgumentError("need at least one scan"))
+    foreach(Base.require_one_based_indexing, scans)
+    scan_size = size(first(scans))
+    all(s -> size(s) == scan_size, scans) || throw(DimensionMismatch("scans differ in size"))
     shared = pitch_angles isa AbstractVector{<:Number}
-    T = float(promote_type(eltype(S), shared ? eltype(pitch_angles) : eltype(eltype(pitch_angles)), eltype(loss_cone)))
-    scan_size = isnothing(tdim) ? size(S) : ntuple(i -> size(S, i + (i >= tdim)), ndims(S) - 1)
     n_pa, spectrum_size = first(scan_size), Base.tail(scan_size)
+    all(c -> axes(c, 1) == Base.OneTo(n_pa), shared ? (pitch_angles,) : pitch_angles) ||
+        throw(DimensionMismatch("pitch_angles needs $n_pa centers per scan"))
+    T = float(promote_type(mapreduce(eltype, promote_type, scans), shared ? eltype(pitch_angles) : mapreduce(eltype, promote_type, pitch_angles), eltype(loss_cone)))
     weight = _sector_weight(T, weighted ? half_sector_width : 0, weighted)
     buf = (; dΩ = Vector{T}(undef, n_pa), para = Vector{T}(undef, n_pa), anti = Vector{T}(undef, n_pa), perp = Vector{T}(undef, n_pa))
-    scan!(out, t, s, centers, lc) = _directional_scan!(out, t, buf, s, centers, lc, weight, para_tol, perp_tol, weighted)
-    n_t = isnothing(tdim) ? 1 : _scan_count(S, tdim)
-    _check_pitch_angles(pitch_angles, n_pa, n_t, !isnothing(tdim))
-    if isnothing(tdim)
-        loss_cone isa Number || throw(DimensionMismatch("one scan takes a scalar loss cone"))
-        out = ntuple(_ -> Array{T}(undef, spectrum_size), 4)
-        scan!(out, 1, S, pitch_angles, loss_cone)
-        return _spectra_tuple(isempty(spectrum_size) ? map(only, out) : out)
+    outs = ntuple(_ -> Array{T}(undef, spectrum_size..., length(scans)), 4)
+    for (t, s) in enumerate(scans)
+        centers = shared ? pitch_angles : pitch_angles[t]
+        _directional_scan!(outs, t, buf, s, centers, _at(loss_cone, t), weight, para_tol, perp_tol, weighted)
     end
-    loss_cone isa Number || _check_series(loss_cone, n_t, "loss_cone")
-    outs = ntuple(_ -> Array{T}(undef, spectrum_size..., n_t), 4)
-    _foreach_scan(eachslice(S; dims = tdim)) do t, s
-        scan!(outs, t, s, shared ? pitch_angles : pitch_angles[t], _at(loss_cone, t))
-    end
-    return _spectra_tuple(outs)
-end
-
-_spectra_tuple(out) = NamedTuple{(:omni, :para, :anti, :perp)}(out)
-# Function barrier: the slice type depends on the runtime `tdim`.
-_foreach_scan(f, scans) = foreach(f, eachindex(scans), scans)
-
-# Pitch centers are one vector of `n_pa` angles shared by all scans or, in a series, one such vector per scan.
-function _check_pitch_angles(pitch_angles, n_pa, n_t, series)
-    per_scan = series && !(pitch_angles isa AbstractVector{<:Number})
-    per_scan && _check_series(pitch_angles, n_t, "pitch_angles")
-    all(c -> axes(c, 1) == Base.OneTo(n_pa), per_scan ? pitch_angles : (pitch_angles,)) ||
-        throw(DimensionMismatch("pitch_angles needs $n_pa centers per scan"))
-    return
+    return NamedTuple{(:omni, :para, :anti, :perp)}(outs)
 end
 
 # Solid-angle weight of the sector at pitch center `pa` [deg]; NaN for a non-finite center drops the sector.

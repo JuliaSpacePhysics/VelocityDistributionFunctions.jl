@@ -76,11 +76,7 @@ end
     data = rand(32, 16, 32, 3)
     Bs = [[1, 0, 0], [0, 1, 1], B_tilted]
     grids = [EnergyAngleBins(:phi => mms_φ, :theta => mms_θ, :energy => mms_E .* k) for k in 1:3]
-    res = angle_distribution(data, grids, :pitch; B = Bs, tdim = 4)
+    res = angle_distribution(eachslice(data; dims = 4), grids, :pitch; B = Bs)
     @test size(res.data) == size(res.solid_angle) == (12, 32, 3)
     @test res.data[:, :, 2] == angle_distribution(data[:, :, :, 2], grids[2], :pitch; B = Bs[2]).data
-    time_first = permutedims(data, (4, 1, 2, 3))
-    @test omni_spectrum(time_first, mms_grid; tdim = 1) ≈ stack(omni_spectrum.(eachslice(data; dims = 4), Ref(mms_grid)))
-    # B[3, time] as in tpitch_angle_distribution
-    @test_throws DimensionMismatch angle_distribution(data, mms_grid, :pitch; B = stack(Bs), tdim = 4)
 end

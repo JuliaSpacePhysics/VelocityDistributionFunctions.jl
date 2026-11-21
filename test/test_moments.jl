@@ -34,7 +34,7 @@ end
     # data is [t, φ, θ, E]; φ and energy vary with time
     grids = EnergyAngleBins.(:phi .=> eachrow(phi), :theta => theta, :energy .=> eachrow(energy))
     B = eachrow(mag_data)
-    moms = plasma_moments(data, grids; sc_pot = scpot_data, B, tdim = 1, units = :df_cm, species = :H)
+    moms = plasma_moments(eachslice(data; dims = 1), grids; sc_pot = scpot_data, B, units = :df_cm, species = :H)
     @test moms.density ≈ ref["density"] rtol = 2.0e-3
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
     @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 2.0e-3
@@ -88,12 +88,13 @@ end
     @test_throws DimensionMismatch plasma_moments(data, EnergyAngleBins(:energy => energy, :phi => phi, :theta => theta; denergy = widths); kw...)
     @test_throws DimensionMismatch plasma_moments(reshape(data, 4, 3, 3, 1), grid; kw...)
     @test_throws UndefKeywordError plasma_moments(data, grid; species = :H)
-    series = reshape(data, 4, 3, 3, 1)
-    @test only(plasma_moments(series, grid; tdim = 4, kw...)) == expected
-    @test_throws DimensionMismatch plasma_moments(series, [grid, grid]; tdim = 4, kw...)
-    @test_throws DimensionMismatch plasma_moments(series, grid; tdim = 4, sc_pot = Float64[], kw...)
-    @test_throws DimensionMismatch plasma_moments(series, grid; tdim = 4, B = [[1., 2.]], kw...)
-    @test_throws ArgumentError plasma_moments(series, grid; tdim = 5, kw...)
+    # scans of a series may differ in size
+    grid2 = EnergyAngleBins(:phi => phi, :theta => theta, :energy => energy[1:2]; denergy = widths[1:2])
+    ragged = plasma_moments([data, data[:, :, 1:2]], [grid, grid2]; kw...)
+    @test ragged[1] == expected && ragged[2] == plasma_moments(data[:, :, 1:2], grid2; kw...)
+    @test_throws DimensionMismatch plasma_moments([data], [grid, grid]; kw...)
+    @test_throws DimensionMismatch plasma_moments([data], grid; B = [[1., 2.]], kw...)
+    @test_throws ArgumentError plasma_moments(typeof(data)[], grid; kw...)
 end
 
 @testset "Unit conversion" begin

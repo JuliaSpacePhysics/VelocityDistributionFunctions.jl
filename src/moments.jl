@@ -8,7 +8,7 @@ include("moments/helpers.jl")
 include("moments/compute.jl")
 
 """
-    plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
+    plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)
 
 Align ancillary measurements to the scan intervals before calling.
 
@@ -20,52 +20,18 @@ Align ancillary measurements to the scan intervals before calling.
   `eflux`, `qflux` [eV cm⁻² s⁻¹], `mftens`, `ptens` [eV cm⁻³] as `(xx, yy, zz, xy, xz, yz)`, `ttens`, `avgtemp`, `t3` [eV].
 - With field `B`, adds `magt3` [eV] `(⊥, ⊥, ∥)` and the symmetry axis `symm` with `symm_theta`, `symm_phi`, `symm_ang` [deg].
 """
-function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing, tdim = nothing)
+function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)
     (; mass, charge) = _species(species)
     coefficient, E_exp = _conversion_coeff(units, :eflux, mass)
-    function scan(d, g::EnergyAngleBins, pot, field)
-        ndims(d) == length(g.layout) ||
-            throw(DimensionMismatch("scan has $(ndims(d)) axes but grid axes $(g.layout) name $(length(g.layout))"))
-        return _plasma_moments(d, g, pot, field; coefficient, E_exp, mass, charge)
-    end
-    isnothing(tdim) && return scan(data, grid, sc_pot, B)
-    nt = _scan_count(data, tdim, grid; B)
+    _check_rank(data, grid)
+    return _plasma_moments(data, grid, sc_pot, B; coefficient, E_exp, mass, charge)
+end
+
+function plasma_moments(data::_Series, grid; sc_pot = 0, B = nothing, kw...)
+    nt = _scan_count(data, grid; B)
     sc_pot isa Number || _check_series(sc_pot, nt, "sc_pot")
-    moment_at(i) = scan(selectdim(data, tdim, i), _at(grid, i), _at(sc_pot, i), _at(B, i))
-    first_result = moment_at(1)
-    result = StructArray{typeof(first_result)}(undef, nt)
-    result[1] = first_result
-    Threads.@threads :dynamic for i in 2:nt
-        result[i] = moment_at(i)
-    end
-    return result
+    return StructArray(_map_scans(i -> plasma_moments(data[i], _at(grid, i); sc_pot = _at(sc_pot, i), B = _at(B, i), kw...), nt))
 end
-
-function _scan_count(data, tdim, grid; vectors...)
-    nt = _scan_count(data, tdim)
-    nt > 0 || throw(ArgumentError("need at least one scan"))
-    grid isa EnergyAngleBins || _check_series(grid, nt, "grid")
-    for (name, v) in pairs(vectors)
-        isnothing(v) && continue
-        _check_series(v, nt, name)
-        all(x -> (x isa AbstractVector || x isa Tuple) && length(x) == 3, v) ||
-            throw(DimensionMismatch("$name needs one three-component vector per scan"))
-    end
-    return nt
-end
-
-function _scan_count(data, tdim)
-    tdim isa Integer && 1 <= tdim <= ndims(data) || throw(ArgumentError("tdim must be a data axis"))
-    return size(data, tdim)
-end
-
-function _check_series(x, nt, name)
-    x isa AbstractVector && axes(x, 1) == Base.OneTo(nt) ||
-        throw(DimensionMismatch("$name needs one entry for each of $nt scans"))
-end
-
-_at(x, i) = x
-_at(x::AbstractVector, i) = x[i]
 
 # Size of the broadcast of `xs` padded to `ndims(data)`; each must broadcast against `data`.
 function _bshape(data, xs...)

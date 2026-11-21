@@ -24,7 +24,7 @@ end
     params = elfin_des_params(size(pa, 1))
 
     @testset "directional_spectra" begin
-        res = directional_spectra(S, eachcol(pa), LC; tdim = 3, params...)
+        res = directional_spectra(eachslice(S; dims = 3), eachcol(pa), LC; params...)
         @test size(res.para) == (16, 1)
         @test res.para[:, 1] ≈ PARA_T1
         @test res.anti[:, 1] ≈ ANTI_T1
@@ -60,14 +60,11 @@ end
     expected = (; omni = [9, 12], para = [1, 2], anti = [5, 6], perp = [3, 4])
     @test scan_counts(pad.data, pad.centers, 30) == expected
 
-    @testset "shared centers, tdim = $tdim" for tdim in 1:3
-        series = stack((pad.data, 2 .* pad.data); dims = tdim)
-        @test directional_spectra(series, pad.centers, 30; method = :sum, tdim) == map(v -> [v 2v], expected)
-    end
+    @test directional_spectra([pad.data, 2 .* pad.data], pad.centers, 30; method = :sum) == map(v -> [v 2v], expected)
 
     @testset "per-scan centers and loss cones" begin
         flipped = reverse(pad.centers)
-        res = directional_spectra(stack((pad.data, pad.data)), [pad.centers, flipped], [30, 90]; method = :sum, tdim = 3)
+        res = directional_spectra([pad.data, pad.data], [pad.centers, flipped], [30, 90]; method = :sum)
         @test isequal(res, map(hcat, scan_counts(pad.data, pad.centers, 30), scan_counts(pad.data, flipped, 90)))
     end
 
@@ -75,12 +72,10 @@ end
         grid1 = EnergyAngleBins(:theta => [15, 75, 165]; dtheta = 30)
         pad1 = angle_distribution([1, 3, 5], grid1, :pitch; B = [0, 0, 1], bins = 6, method = :sum)
         @test scan_counts(pad1.data, pad1.centers, 30) == map(first, expected)
-        @test directional_spectra([pad1.data 2pad1.data], pad1.centers, 30; method = :sum, tdim = 2) == map(v -> [v[1], 2v[1]], expected)
     end
 
-    series = stack((pad.data, pad.data))
-    @test directional_spectra(series, pad.centers, 30; method = :sum) == directional_spectra(series, pad.centers, 30; method = :sum, tdim = 3)
-    @test_throws DimensionMismatch directional_spectra(series, [pad.centers pad.centers], 30; method = :sum, tdim = 3) # matrix: use eachcol
+    @test_throws DimensionMismatch directional_spectra([pad.data, pad.data], [pad.centers pad.centers], 30; method = :sum) # matrix: use eachcol
+    @test_throws DimensionMismatch directional_spectra([pad.data, pad.data[:, 1:1]], pad.centers, 30; method = :sum)
 end
 
 @testset "non-finite pitch centers have no weight" begin

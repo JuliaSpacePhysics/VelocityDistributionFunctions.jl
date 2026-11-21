@@ -1,20 +1,25 @@
 """
-    angle_distribution(data, grid, coord; B = nothing, gyro_ref = nothing, bins = 12, method = :mean, tdim = nothing) -> (; data, solid_angle, edges, centers)
+    angle_distribution(data, grid, coord; B = nothing, gyro_ref = nothing, bins = 12, method = :mean) -> (; data, solid_angle, edges, centers)
 
 Non-finite cells are skipped; bins without finite cells are `NaN`, as are all bins when `B` or `gyro_ref` defines no direction.
 """
-function angle_distribution(data, grid, coord::Symbol; B = nothing, gyro_ref = nothing, bins = 12, method = :mean, tdim = nothing)
+function angle_distribution(data, grid, coord::Symbol; B = nothing, gyro_ref = nothing, bins = 12, method = :mean)
     method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))
     edges = _angle_edges(coord, bins)
     centers = (edges[begin:(end - 1)] .+ edges[(begin + 1):end]) ./ 2
-    data, solid_angle = _over_scans(data, grid, B, gyro_ref, tdim) do d, g, b, r
-        _bin_cells(d, g, method, coord, edges, b, r)
-    end
+    data, solid_angle = _bin_cells(data, grid, method, coord, edges, B, gyro_ref)
     return (; data, solid_angle, edges, centers)
 end
 
-function omni_spectrum(data, grid; method = :mean, tdim = nothing)
-    x = angle_distribution(data, grid, :theta; bins = 1, method, tdim).data
+function angle_distribution(data::_Series, grid, coord::Symbol; B = nothing, gyro_ref = nothing, kw...)
+    nt = _scan_count(data, grid; B, gyro_ref)
+    scans = _map_scans(i -> angle_distribution(data[i], _at(grid, i), coord; B = _at(B, i), gyro_ref = _at(gyro_ref, i), kw...), nt)
+    (; edges, centers) = first(scans)
+    return (; data = stack(s -> s.data, scans), solid_angle = stack(s -> s.solid_angle, scans), edges, centers)
+end
+
+function omni_spectrum(data, grid; method = :mean)
+    x = angle_distribution(data, grid, :theta; bins = 1, method).data
     return x isa AbstractVector ? only(x) : dropdims(x; dims = 1)
 end
 
@@ -74,8 +79,7 @@ function _bin_cells(data, grid::EnergyAngleBins, method, coord, edges, B, gyro_r
     binof = _cell_binner(coord, edges, B, gyro_ref)
     nbins = length(edges) - 1
     (; energy, phi, theta, dphi, dtheta, layout) = grid
-    ndims(data) == length(layout) ||
-        throw(DimensionMismatch("data has $(ndims(data)) axes but grid axes $layout name $(length(layout))"))
+    _check_rank(data, grid)
     edim = something(findfirst(names -> :energy in names, layout), 0)
     T = promote_type(float(eltype(data)), Float64)
     num = zeros(T, nbins, edim == 0 ? 1 : size(data, edim))
@@ -117,18 +121,3 @@ function _accumulate!(num, den, data, bin, ω, cells, edim, weighted)
 end
 
 _solid_angle(θ, dθ, dφ) = first(_theta_factors(θ, dθ)) * deg2rad(dφ)
-
-# Tuple of arrays `f(data, grid, B, gyro_ref)` per scan along `tdim`, each stacked along a trailing axis; one call without `tdim`.
-function _over_scans(f, data, grid, B, gyro_ref, tdim)
-    isnothing(tdim) && return f(data, grid, B, gyro_ref)
-    nt = _scan_count(data, tdim, grid; B, gyro_ref)
-    scan(i) = f(selectdim(data, tdim, i), _at(grid, i), _at(B, i), _at(gyro_ref, i))
-    first_scan = scan(1)
-    outs = map(x -> similar(x, size(x)..., nt), first_scan)
-    store!(i, xs) = foreach((o, x) -> selectdim(o, ndims(o), i) .= x, outs, xs)
-    store!(1, first_scan)
-    Threads.@threads :dynamic for i in 2:nt
-        store!(i, scan(i))
-    end
-    return outs
-end

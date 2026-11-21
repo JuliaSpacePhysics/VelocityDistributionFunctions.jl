@@ -87,3 +87,6 @@ function _check_theta(theta, dtheta)
     ))
     return nothing
 end
+
+_check_rank(data, (; layout)::EnergyAngleBins) = ndims(data) == length(layout) ||
+    throw(DimensionMismatch("data has $(ndims(data)) axes but grid axes $layout name $(length(layout))"))
