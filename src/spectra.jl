@@ -106,43 +106,74 @@ end
 """
     group_mean(data, groups; dims, weights = nothing)
 """
-function group_mean(data, groups; dims, weights = nothing)
-    groups = _index_groups(groups)
-    dims isa Integer && 1 <= dims <= ndims(data) || throw(ArgumentError("dims must be a data axis"))
+group_mean(data, groups; dims, weights = nothing) = _group_mean((data,), groups, weights, dims)
+function group_mean(data::_Series, groups; dims, weights = nothing)
+    Base.require_one_based_indexing(data)
+    isempty(data) && throw(ArgumentError("need at least one scan"))
+    return _group_mean(data, groups, weights, dims)
+end
+
+function _group_mean(scans, groups, weights, dims)
+    d = first(scans)
+    dims isa Integer && 1 <= dims <= ndims(d) || throw(ArgumentError("dims must be a data axis"))
+    return _group_scans!(scans, groups, weights, dims, CartesianIndices(axes(d)[1:(dims - 1)]), CartesianIndices(axes(d)[(dims + 1):end]))
+end
+
+# Function barrier: `pre` and `post` are not inferable from a runtime `dims`. A tuple of one scan gives no time axis.
+function _group_scans!(scans, groups, weights, dims, pre, post)
+    d1, w1, g1 = _scan(scans, groups, weights, dims, 1)
+    T = float(promote_type(eltype(d1), isnothing(w1) ? Bool : eltype(w1)))
+    time = scans isa Tuple ? () : (length(scans),)
+    out = similar(d1, T, axes(pre)..., length(g1), axes(post)..., time...)
+    den = similar(out, axes(pre))
+    for t in eachindex(scans)
+        d, w, g = _scan(scans, groups, weights, dims, t, g1)
+        slice = isempty(time) ? out : view(out, ntuple(_ -> :, Val(ndims(out) - 1))..., t)
+        ndims(d) == ndims(slice) && all(k -> k == dims || axes(d, k) == axes(slice, k), 1:ndims(d)) ||
+            throw(DimensionMismatch("scans must share the axes other than dims"))
+        _group_mean!(slice, den, d, w, g, pre, post)
+    end
+    return out
+end
+
+# Scan `t`, its weights and index groups; the checks guard the `@inbounds` kernel.
+function _scan(scans, groups, weights, dims, t, buf = nothing)
+    data, weights = scans[t], _at_scan(weights, t, scans)
     Base.require_one_based_indexing(data)
     n = size(data, dims)
     if !isnothing(weights)
         Base.require_one_based_indexing(weights)
         length(weights) == n || throw(DimensionMismatch("expected $n weights, got $(length(weights))"))
     end
+    return data, weights, _index_groups(groups isa Pair ? _at_scan(groups.first, t, scans) => groups.second : groups, n, buf)
+end
+
+# Weights and the values of `values => edges` are shared or one vector per scan.
+_at_scan(x, t, scans) = x
+_at_scan(x::AbstractVector{<:Number}, t, scans) = x
+_at_scan(x::AbstractVector, t, scans) = (_check_series(x, length(scans), "values and weights"); x[t])
+
+# Index groups of `values => edges`: entries in `[edges[g], edges[g + 1])`, the last bin closed; refills `groups`.
+_index_groups(groups::Pair, n, ::Nothing) = _index_groups(groups, n, [Int[] for _ in 2:length(groups.second)])
+function _index_groups((values, edges)::Pair, n, groups)
+    Base.require_one_based_indexing(values)
+    length(values) == n || throw(DimensionMismatch("expected $n values, got $(length(values))"))
+    length(edges) >= 2 && issorted(edges) || throw(ArgumentError("bin edges must be ≥ 2 sorted values, got $edges"))
+    ng = length(edges) - 1
+    foreach(empty!, groups)
+    for (i, v) in pairs(values)
+        g = v == edges[end] ? ng : searchsortedlast(edges, v)
+        1 <= g <= ng && push!(groups[g], i)
+    end
+    return groups
+end
+function _index_groups(groups, n, _)
     all(g -> checkbounds(Bool, 1:n, g), groups) || throw(ArgumentError("groups must index the $n entries along dims"))
-    T = float(promote_type(eltype(data), isnothing(weights) ? Bool : eltype(weights)))
-    pre, post = axes(data)[1:(dims - 1)], axes(data)[(dims + 1):end]
-    out = similar(data, T, pre..., length(groups), post...)
-    return _group_mean!(out, data, weights, groups, CartesianIndices(pre), CartesianIndices(post))
+    return groups
 end
 
-function group_mean(data::_Series, groups; dims, weights = nothing)
-    Base.require_one_based_indexing(data)
-    nt = length(data)
-    nt > 0 || throw(ArgumentError("need at least one scan"))
-    per_scan(x) = x isa AbstractVector && !(x isa AbstractVector{<:Number}) && (_check_series(x, nt, "values and weights"); true)
-    values_vary = groups isa Pair && per_scan(groups.first)
-    weights_vary = !isnothing(weights) && per_scan(weights)
-    scan_groups(i) = values_vary ? groups.first[i] => groups.second : groups
-    return stack(i -> group_mean(data[i], scan_groups(i); dims, weights = weights_vary ? weights[i] : weights), 1:nt)
-end
-
-# Index groups of `values => edges`: entries in `[edges[g], edges[g + 1])`, the last bin closed.
-_index_groups(groups) = groups
-function _index_groups((values, edges)::Pair)
-    length(edges) >= 2 && issorted(edges) || throw(ArgumentError("bin edges must be ≥ 2 increasing values, got $edges"))
-    return [findall(v -> edges[g] <= v < edges[g + 1] || (g == length(edges) - 1 && v == edges[end]), values) for g in 1:(length(edges) - 1)]
-end
-
-function _group_mean!(out, data, weights, groups, pre, post)
+function _group_mean!(out, den, data, weights, groups, pre, post)
     T = eltype(out)
-    den = Array{T}(undef, size(pre))
     # Each `out[pre, g, K]` is reduced right after its reset, staying cache-hot through the index loop.
     @inbounds for K in post, (g, group) in enumerate(groups)
         for I in pre
