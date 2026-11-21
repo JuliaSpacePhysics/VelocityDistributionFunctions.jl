@@ -13,6 +13,9 @@ function convert_flux_units(data, energy, units::Pair{Symbol, Symbol}; species =
     return @. data * c * _ipow(energy, p)
 end
 
+convert_flux_units(data, grid::EnergyAngleBins, units::Pair{Symbol, Symbol}; kw...) =
+    convert_flux_units(data, _energies(grid), units; kw...)
+
 # E^p for the p ∈ -2:2 that conversions produce; generic `^(::Float64, ::Int)` is way slower
 _ipow(E, p) = p == -2 ? inv(E * E) : p == -1 ? inv(E) : p == 0 ? one(E) : p == 1 ? E : p == 2 ? E * E : E^p
 

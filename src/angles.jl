@@ -1,7 +1,7 @@
 """
     angle_distribution(data, grid, coord; B = nothing, gyro_ref = nothing, bins = 12, method = :mean) -> (; data, solid_angle, edges, centers)
 
-Non-finite cells are skipped; bins without finite cells are `NaN`, as are all bins when `B` or `gyro_ref` defines no direction.
+All bins are `NaN` when `B` or `gyro_ref` defines no direction.
 """
 function angle_distribution(data, grid, coord::Symbol; B = nothing, gyro_ref = nothing, bins = 12, method = :mean)
     method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))

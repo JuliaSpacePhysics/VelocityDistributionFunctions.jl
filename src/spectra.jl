@@ -5,13 +5,14 @@ is_perpendicular(p, l, atol) = (pl = para_losscone(l); (pl + atol) < p < (180.0 
 
 
 """
-    directional_spectra(S, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
+    directional_spectra(S, pitch_angles, loss_cone; half_sector_width, para_tol = 0, perp_tol = 0, method = :mean)
 
 With `l = min(loss_cone, 180° - loss_cone)`, sectors at pitch angle `θ` are
 para if `θ < l - para_tol`, anti if `θ > 180° - l + para_tol`, perp if `l + perp_tol < θ < 180° - l - perp_tol`; omni takes all.
-Sectors with non-finite flux or pitch angle are skipped; a direction left without sectors gives `NaN`.
+Sectors with non-finite pitch angle are skipped.
 
 `:mean` weights sectors by solid angle `2Δθ sin θ`, or `Δθ sin Δθ` within `Δθ = half_sector_width` of 0° or 180°.
+The default `Δθ` is half the median spacing of consecutive finite pitch centers, per scan.
 `:sum` does not compensate for skipped sectors.
 """
 function directional_spectra(S, pitch_angles, loss_cone; kw...)
@@ -33,7 +34,6 @@ end
 function _directional_spectra(scans, pitch_angles, loss_cone; half_sector_width = nothing, para_tol = 0, perp_tol = 0, method = :mean)
     method in (:mean, :sum) || throw(ArgumentError("method must be :mean or :sum, got :$method"))
     weighted = method === :mean
-    weighted && isnothing(half_sector_width) && throw(ArgumentError("method = :mean requires half_sector_width"))
     isempty(scans) && throw(ArgumentError("need at least one scan"))
     foreach(Base.require_one_based_indexing, scans)
     scan_size = size(first(scans))
@@ -43,14 +43,20 @@ function _directional_spectra(scans, pitch_angles, loss_cone; half_sector_width 
     all(c -> axes(c, 1) == Base.OneTo(n_pa), shared ? (pitch_angles,) : pitch_angles) ||
         throw(DimensionMismatch("pitch_angles needs $n_pa centers per scan"))
     T = float(promote_type(mapreduce(eltype, promote_type, scans), shared ? eltype(pitch_angles) : mapreduce(eltype, promote_type, pitch_angles), eltype(loss_cone)))
-    weight = _sector_weight(T, weighted ? half_sector_width : 0, weighted)
     buf = (; dΩ = Vector{T}(undef, n_pa), para = Vector{T}(undef, n_pa), anti = Vector{T}(undef, n_pa), perp = Vector{T}(undef, n_pa))
     outs = ntuple(_ -> Array{T}(undef, spectrum_size..., length(scans)), 4)
     for (t, s) in enumerate(scans)
         centers = shared ? pitch_angles : pitch_angles[t]
+        weight = _sector_weight(T, !weighted ? 0 : isnothing(half_sector_width) ? _half_spacing(centers) : half_sector_width, weighted)
         _directional_scan!(outs, t, buf, s, centers, _at(loss_cone, t), weight, para_tol, perp_tol, weighted)
     end
     return NamedTuple{(:omni, :para, :anti, :perp)}(outs)
+end
+
+function _half_spacing(centers)
+    d = sort!(abs.(diff(filter(isfinite, centers))))
+    isempty(d) && throw(ArgumentError("supply half_sector_width: fewer than two finite pitch centers"))
+    return d[(end + 1) ÷ 2] / 2
 end
 
 # Solid-angle weight of the sector at pitch center `pa` [deg]; NaN for a non-finite center drops the sector.
@@ -99,8 +105,6 @@ end
 
 """
     group_mean(data, groups; dims, weights = nothing)
-
-Non-finite values are skipped; a group left without values gives `NaN`.
 """
 function group_mean(data, groups; dims, weights = nothing)
     dims isa Integer && 1 <= dims <= ndims(data) || throw(ArgumentError("dims must be a data axis"))

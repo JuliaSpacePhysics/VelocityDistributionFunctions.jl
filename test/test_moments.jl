@@ -41,7 +41,8 @@ end
     @test moms.flux ≈ eachrow(ref["flux"]) rtol = 2.0e-3
     @test moms.eflux ≈ eachrow(ref["eflux"]) rtol = 2.0e-3
     @test moms.qflux ≈ eachrow(ref["qflux"]) rtol = 0.02  # PySPEDAS integrates the heat flux at bin centers, off by O(bin width²).
-    @test moms.ptens ≈ eachrow(ref["ptens"]) rtol = 2.0e-3
+    spedas6(P) = [P[1, 1], P[2, 2], P[3, 3], P[1, 2], P[1, 3], P[2, 3]]
+    @test spedas6.(moms.ptens) ≈ eachrow(ref["ptens"]) rtol = 2.0e-3
     @test moms.t3 ≈ eachrow(ref["t3"]) rtol = 1.0e-6
     @test moms.magt3 ≈ eachrow(ref["magt3"]) rtol = 1.0e-6
     @test moms.symm_ang ≈ ref["symm_ang"] rtol = 1.0e-5
@@ -103,6 +104,7 @@ end
     @test convert_flux_units(f, E, :df_cm => :df_km) ≈ 1.0e30 .* f
     @test convert_flux_units(f, E, :df_cm => :df_m) ≈ 1.0e12 .* f
     @test convert_flux_units(f, E, :flux => :eflux) ≈ f .* E
+    @test convert_flux_units(f, EnergyAngleBins(:phi => [180], :energy => vec(E); dphi = 360), :flux => :eflux) ≈ f .* E
     @test convert_flux_units(f, E, :df_cm => :flux; species = :e) ≈ 2E ./ mₑ^2 .* f
     @test_throws ArgumentError convert_flux_units(f, E, :flux => :df_cm)
 end

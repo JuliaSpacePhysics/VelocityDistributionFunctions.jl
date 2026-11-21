@@ -7,10 +7,10 @@ using StaticArrays: SVector, SMatrix, SA, @SMatrix
 using Base: tail
 using StructArrays: StructArray
 
+include("bins.jl")
 include("unit_conversion.jl")
 include("series.jl")
 include("spectra.jl")
-include("bins.jl")
 include("moments.jl")
 include("angles.jl")
 

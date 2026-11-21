@@ -90,3 +90,8 @@ end
 
 _check_rank(data, (; layout)::EnergyAngleBins) = ndims(data) == length(layout) ||
     throw(DimensionMismatch("data has $(ndims(data)) axes but grid axes $layout name $(length(layout))"))
+
+function _energies((; energy)::EnergyAngleBins)
+    energy isa Union{Nothing, Missing} && throw(ArgumentError("need grid energies"))
+    return energy
+end

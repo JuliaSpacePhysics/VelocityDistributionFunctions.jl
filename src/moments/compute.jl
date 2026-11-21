@@ -70,8 +70,7 @@ end
 _finite(d) = ifelse(isfinite(d), d, zero(d))
 
 # Heat flux q = (m/2)∫|v - u|²(v - u) f d³v expanded in the lab-frame moments
-function compute_heat_flux(eflux, mftens, velocity, density, mass)
-    M = _symmetric(mftens)
+function compute_heat_flux(eflux, M, velocity, density, mass)
     u = velocity
     return eflux - M * u - tr(M) / 2 * u + mass * density * (u ⋅ u) * u
 end
@@ -79,19 +78,11 @@ end
 # 3×3 matrix of a symmetric tensor stored as (xx, yy, zz, xy, xz, yz)
 _symmetric(t) = SMatrix{3, 3}(t[1], t[4], t[5], t[4], t[2], t[6], t[5], t[6], t[3])
 
-function compute_pressure_tensor(mftens, velocity, flux, mass)
-    pt3x3 = _symmetric(mftens) - (velocity * flux') .* mass
-    ptens = SA[pt3x3[1, 1], pt3x3[2, 2], pt3x3[3, 3], pt3x3[1, 2], pt3x3[1, 3], pt3x3[2, 3]]
-    return ptens
-end
+# `flux * flux'` keeps the result exactly symmetric
+compute_pressure_tensor(M, flux, density, mass) = M - (flux * flux') .* (mass / density)
 
-function compute_temperature(ptens::SVector{6, T}, density, mass) where {T}
-    pt3x3 = SMatrix{3, 3, T}(
-        ptens[1], ptens[4], ptens[5],
-        ptens[4], ptens[2], ptens[6],
-        ptens[5], ptens[6], ptens[3]
-    )
-    t3x3 = pt3x3 / density
+function compute_temperature(ptens::SMatrix{3, 3, T}, density, mass) where {T}
+    t3x3 = ptens / density
     avgtemp = (t3x3[1, 1] + t3x3[2, 2] + t3x3[3, 3]) / 3
     vth = sqrt(T(2) * avgtemp / mass)
 

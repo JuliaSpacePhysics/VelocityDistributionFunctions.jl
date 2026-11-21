@@ -30,6 +30,9 @@ end
         @test res.anti[:, 1] ≈ ANTI_T1
         @test res.perp[:, 1] ≈ PERP_T1
         @test res.omni[:, 1] ≈ OMNI_T1
+        # half the 22.4° center spacing ≈ the instrument's 11.25°
+        default = directional_spectra(eachslice(S; dims = 3), eachcol(pa), LC; params.para_tol, params.perp_tol)
+        @test default.perp[:, 1] ≈ PERP_T1 rtol = 1.0e-3
     end
 
     @testset "group_mean" begin
@@ -82,4 +85,5 @@ end
     res = directional_spectra([1; 100; 100;;], [90, Inf, -Inf], 30; half_sector_width = 5)
     @test only(res.omni) == only(res.perp) == 1
     @test isnan(only(res.para)) && isnan(only(res.anti))
+    @test_throws ArgumentError directional_spectra([1; 100; 100;;], [90, Inf, -Inf], 30)
 end

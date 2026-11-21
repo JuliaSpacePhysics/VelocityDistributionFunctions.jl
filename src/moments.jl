@@ -11,14 +11,6 @@ include("moments/compute.jl")
     plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)
 
 Align ancillary measurements to the scan intervals before calling.
-
-- `data` is in `units`: `:eflux` [eV/(cm²·s·sr·eV)], `:flux` [1/(cm²·s·sr·eV)], `:df_cm` [s³/cm⁶], `:df_km` [s³/km⁶] or `:df_m` [s³/m⁶].
-- `species` is `:H`, `:He` (α), `:O` (¹⁶O⁺), `:e`, or a `PlasmaPopulations.Particle`.
-- `sc_pot` [V] shifts energies by `charge * sc_pot`.
-- Non-finite `data` bins contribute zero; a scan without finite bins gives NaN moments.
-- Output NamedTuple is CGS with energies in eV: `density` [cm⁻³], `velocity`, `vthermal` [cm/s], `flux` [cm⁻² s⁻¹],
-  `eflux`, `qflux` [eV cm⁻² s⁻¹], `mftens`, `ptens` [eV cm⁻³] as `(xx, yy, zz, xy, xz, yz)`, `ttens`, `avgtemp`, `t3` [eV].
-- With field `B`, adds `magt3` [eV] `(⊥, ⊥, ∥)` and the symmetry axis `symm` with `symm_theta`, `symm_phi`, `symm_ang` [deg].
 """
 function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)
     (; mass, charge) = _species(species)
@@ -56,8 +48,8 @@ end
 _as_array(A) = unsafe_wrap(Array, pointer(A), size(A))
 
 function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, charge)
-    (; energy, denergy, phi, dphi, theta, dtheta) = grid
-    energy isa Union{Nothing, Missing} && throw(ArgumentError("moments need grid energies"))
+    energy = _energies(grid)
+    (; denergy, phi, dphi, theta, dtheta) = grid
     # At least Float64: central moments are differences of lab-frame moments, amplifying rounding by
     # |mftens|/|ptens| and |eflux|/|qflux| (~10² and ~10⁵ in the solar wind).
     T = promote_type(eltype(data), Float64)
@@ -79,11 +71,11 @@ function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, cha
         S = _as_array(@alloc(T, length(omega), 4))
         _den, flux, _mftens, eflux = compute_fused_moments(data, W, omega, S)
         density = sqrt(mass / 2) * _den
-        mftens = _mftens .* T(sqrt(2 * mass))
+        mftens = _symmetric(_mftens) .* T(sqrt(2 * mass))
         velocity = flux ./ density
 
         qflux = compute_heat_flux(eflux, mftens, velocity, density, mass)
-        ptens = compute_pressure_tensor(mftens, velocity, flux, mass)
+        ptens = compute_pressure_tensor(mftens, flux, density, mass)
         temp = compute_temperature(ptens, density, mass)
 
         core = (;
