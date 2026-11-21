@@ -8,6 +8,7 @@ using Base: tail
 using StructArrays: StructArray
 
 include("unit_conversion.jl")
+include("series.jl")
 include("spectra.jl")
 include("bins.jl")
 include("moments.jl")

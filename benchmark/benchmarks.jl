@@ -13,7 +13,7 @@ let
     params = elfin_des_params(size(pa, 1))
 
     g = SUITE["spectra"] = BenchmarkGroup()
-    g["directional_spectra"] = @benchmarkable directional_spectra($S, $(eachcol(pa)), $LC; tdim = 3, $params...)
+    g["directional_spectra"] = @benchmarkable directional_spectra($(eachslice(S; dims = 3)), $(eachcol(pa)), $LC; $params...)
     g["group_mean"] = @benchmarkable group_mean($S, $ELFIN_PA_CHANNELS; dims = 2, weights = $ELFIN_EPD_dE)
 end
 
@@ -28,6 +28,6 @@ let nt = 100, nphi = 32, ntheta = 16, nenergy = 32
     B = eachrow(randn(nt, 3))
 
     g = SUITE["plasma_moments"] = BenchmarkGroup()
-    g["no_magf"] = @benchmarkable plasma_moments($data, $grid; sc_pot = $scpot, tdim = 1, units = :df_cm, species = :H)
-    g["with_magf"] = @benchmarkable plasma_moments($data, $grid; sc_pot = $scpot, B = $B, tdim = 1, units = :df_cm, species = :H)
+    g["no_magf"] = @benchmarkable plasma_moments($(eachslice(data; dims = 1)), $grid; sc_pot = $scpot, units = :df_cm, species = :H)
+    g["with_magf"] = @benchmarkable plasma_moments($(eachslice(data; dims = 1)), $grid; sc_pot = $scpot, B = $B, units = :df_cm, species = :H)
 end

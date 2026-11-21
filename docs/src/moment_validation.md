@@ -19,13 +19,13 @@ Two FPI properties shape the `EnergyAngleBins`:
 - FPI angles are instrument look directions, but the bins take particle velocity directions, so both angles are flipped.
 - The azimuth and energy tables change from scan to scan, so the bins are built once per scan.
 
-The bins' axes are those of a single scan, in order. `tdim` gives the time axis of the full array.
+The bins name the axes of one scan, `(φ, θ, energy)`; the series slices the data along time.
 
 ```@example moment
 phi = mod.(dist["phi"] .+ 180, 360)
 theta = 180 .- dist["theta"]
 grid = EnergyAngleBins.(:phi .=> eachrow(phi), :theta => theta, :energy .=> eachrow(dist["energy"]))
-moments = plasma_moments(dist["data"], grid; species = :H, units = :df_cm, tdim = 1,
+moments = plasma_moments(eachslice(dist["data"]; dims = 1), grid; species = :H, units = :df_cm,
     sc_pot = saved["scpot_data"], B = eachrow(saved["mag_data"]))
 nothing # hide
 ```
