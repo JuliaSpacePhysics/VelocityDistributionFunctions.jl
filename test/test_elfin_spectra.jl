@@ -44,6 +44,10 @@ end
         @test isequal(group_mean(permutedims(S[:, :, 1]), ELFIN_PA_CHANNELS; dims = 1, weights = ELFIN_EPD_dE), permutedims(pas[:, :, 1]))
         @test group_mean([1, 2, 3], [1:2, 3:3]; dims = 1) == [1.5, 3]
         @test group_mean([1, 2, 3], [1:2, 3:3]; dims = 1, weights = [1, 3, 2]) == [1.75, 3]
+        @test group_mean([1, 2, 3], [10, 20, 30] => [0, 25, 30]; dims = 1) == [1.5, 3]
+        # energy tables varying per scan
+        bands = group_mean([[1.0 2 3], [4.0 5 6]], [[10, 20, 30], [5, 25, 35]] => [0, 22, 40]; dims = 2)
+        @test isequal(bands, cat([1.5 3], [4 5.5]; dims = 3))
         @test_throws ArgumentError group_mean(S, [15:17]; dims = 2)
         @test_throws DimensionMismatch group_mean(S, ELFIN_PA_CHANNELS; dims = 1, weights = ELFIN_EPD_dE)
     end

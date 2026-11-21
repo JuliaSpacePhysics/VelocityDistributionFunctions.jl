@@ -107,6 +107,7 @@ end
     group_mean(data, groups; dims, weights = nothing)
 """
 function group_mean(data, groups; dims, weights = nothing)
+    groups = _index_groups(groups)
     dims isa Integer && 1 <= dims <= ndims(data) || throw(ArgumentError("dims must be a data axis"))
     Base.require_one_based_indexing(data)
     n = size(data, dims)
@@ -119,6 +120,24 @@ function group_mean(data, groups; dims, weights = nothing)
     pre, post = axes(data)[1:(dims - 1)], axes(data)[(dims + 1):end]
     out = similar(data, T, pre..., length(groups), post...)
     return _group_mean!(out, data, weights, groups, CartesianIndices(pre), CartesianIndices(post))
+end
+
+function group_mean(data::_Series, groups; dims, weights = nothing)
+    Base.require_one_based_indexing(data)
+    nt = length(data)
+    nt > 0 || throw(ArgumentError("need at least one scan"))
+    per_scan(x) = x isa AbstractVector && !(x isa AbstractVector{<:Number}) && (_check_series(x, nt, "values and weights"); true)
+    values_vary = groups isa Pair && per_scan(groups.first)
+    weights_vary = !isnothing(weights) && per_scan(weights)
+    scan_groups(i) = values_vary ? groups.first[i] => groups.second : groups
+    return stack(i -> group_mean(data[i], scan_groups(i); dims, weights = weights_vary ? weights[i] : weights), 1:nt)
+end
+
+# Index groups of `values => edges`: entries in `[edges[g], edges[g + 1])`, the last bin closed.
+_index_groups(groups) = groups
+function _index_groups((values, edges)::Pair)
+    length(edges) >= 2 && issorted(edges) || throw(ArgumentError("bin edges must be ≥ 2 increasing values, got $edges"))
+    return [findall(v -> edges[g] <= v < edges[g + 1] || (g == length(edges) - 1 && v == edges[end]), values) for g in 1:(length(edges) - 1)]
 end
 
 function _group_mean!(out, data, weights, groups, pre, post)
