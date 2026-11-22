@@ -3,7 +3,7 @@ using VelocityDistributionFunctions
 using VelocityDistributionFunctions: _bin_widths
 using Downloads
 using JLD2
-using PlasmaPopulations: Particle
+using PlasmaPopulations: Particle, E_SI
 
 include("utils.jl")
 
@@ -35,14 +35,15 @@ end
     grids = EnergyAngleBins.(:phi .=> eachrow(phi), :theta => theta, :energy .=> eachrow(energy))
     B = eachrow(mag_data)
     moms = plasma_moments(eachslice(data; dims = 1), grids; sc_pot = scpot_data, B, units = :df_cm, species = :H)
-    @test moms.density ≈ ref["density"] rtol = 2.0e-3
+    # PySPEDAS: cm⁻³, km/s, cm⁻² s⁻¹, eV cm⁻² s⁻¹, eV cm⁻³
+    @test moms.density ≈ 1.0e6 .* ref["density"] rtol = 2.0e-3
     @test moms.avgtemp ≈ ref["avgtemp"] rtol = 1.0e-6
-    @test moms.velocity .* 1.0e-5 ≈ eachrow(ref["velocity"]) rtol = 2.0e-3
-    @test moms.flux ≈ eachrow(ref["flux"]) rtol = 2.0e-3
-    @test moms.eflux ≈ eachrow(ref["eflux"]) rtol = 2.0e-3
-    @test moms.qflux ≈ eachrow(ref["qflux"]) rtol = 0.02  # PySPEDAS integrates the heat flux at bin centers, off by O(bin width²).
+    @test moms.velocity .* 1.0e-3 ≈ eachrow(ref["velocity"]) rtol = 2.0e-3
+    @test moms.flux ≈ 1.0e4 .* eachrow(ref["flux"]) rtol = 2.0e-3
+    @test moms.eflux ≈ (1.0e4 * E_SI) .* eachrow(ref["eflux"]) rtol = 2.0e-3
+    @test moms.qflux ≈ (1.0e4 * E_SI) .* eachrow(ref["qflux"]) rtol = 0.02  # PySPEDAS integrates the heat flux at bin centers, off by O(bin width²).
     spedas6(P) = [P[1, 1], P[2, 2], P[3, 3], P[1, 2], P[1, 3], P[2, 3]]
-    @test spedas6.(moms.ptens) ≈ eachrow(ref["ptens"]) rtol = 2.0e-3
+    @test spedas6.(moms.ptens) ≈ (1.0e6 * E_SI) .* eachrow(ref["ptens"]) rtol = 2.0e-3
     @test moms.t3 ≈ eachrow(ref["t3"]) rtol = 1.0e-6
     @test moms.magt3 ≈ eachrow(ref["magt3"]) rtol = 1.0e-6
     @test moms.symm_ang ≈ ref["symm_ang"] rtol = 1.0e-5

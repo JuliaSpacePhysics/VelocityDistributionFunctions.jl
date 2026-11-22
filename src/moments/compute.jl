@@ -82,9 +82,10 @@ _symmetric(t) = SMatrix{3, 3}(t[1], t[4], t[5], t[4], t[2], t[6], t[5], t[6], t[
 compute_pressure_tensor(M, flux, density, mass) = M - (flux * flux') .* (mass / density)
 
 function compute_temperature(ptens::SMatrix{3, 3, T}, density, mass) where {T}
-    t3x3 = ptens / density
-    avgtemp = (t3x3[1, 1] + t3x3[2, 2] + t3x3[3, 3]) / 3
-    vth = sqrt(T(2) * avgtemp / mass)
+    kT = ptens / density
+    vth = sqrt(2 * tr(kT) / (3 * mass))
+    t3x3 = kT / T(E_SI)   # eV
+    avgtemp = tr(t3x3) / 3
 
     # Eigenvalue decomposition
     t3_eig = _safe_eigen(Symmetric(t3x3))

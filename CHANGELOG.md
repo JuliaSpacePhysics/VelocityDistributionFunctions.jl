@@ -10,6 +10,7 @@
 - **Breaking**: `tmoments` → `plasma_moments`; `pitch_angle_distribution`, `tpitch_angle_distribution` → `angle_distribution`; `directional_energy_spectra` → `directional_spectra`; `PAspectra` → `group_mean`.
 - **Breaking**: `angle_distribution` `:mean` is solid-angle weighted, empty `:sum` bins are `NaN`, and bins are returned as `edges` and `centers`.
 - **Breaking**: `qflux` integrates each bin's solid angle exactly (up to 2% from SPEDAS for MMS FPI ions); species masses are CODATA values; moments are at least `Float64`; `mftens` and `ptens` are 3×3 matrices instead of `(xx, yy, zz, xy, xz, yz)`.
+- **Breaking**: `plasma_moments` returns SI (`density` [m⁻³], `velocity` [m/s], `flux` [m⁻² s⁻¹], `eflux`, `qflux` [W/m²], `mftens`, `ptens` [Pa]) instead of CGS; temperatures stay in eV.
 
 ### Removed
 

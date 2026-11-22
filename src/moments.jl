@@ -14,7 +14,8 @@ Align ancillary measurements to the scan intervals before calling.
 """
 function plasma_moments(data, grid; species, units, sc_pot = 0, B = nothing)
     (; mass, charge) = _species(species)
-    coefficient, E_exp = _conversion_coeff(units, :eflux, mass)
+    c, E_exp = _conversion_coeff(units, :eflux, mass)
+    coefficient = 1.0e4 * c / E_SI^E_exp  # eflux [1/(m² s sr)] for energies in J
     _check_rank(data, grid)
     return _plasma_moments(data, grid, sc_pot, B; coefficient, E_exp, mass, charge)
 end
@@ -33,9 +34,10 @@ function _bshape(data, xs...)
     return map(length, ax)
 end
 
-# Energy factors scale·E∞^p, p = 1/2, 1, 3/2, 2, of the density, flux, mftens and eflux sums.
+# Energy factors scale·E∞^p, p = 1/2, 1, 3/2, 2, of the density, flux, mftens and eflux sums; `E`, `dE` [eV], `ΔU` [J].
 @inline function _energy_weights(E, dE, ΔU, coefficient, E_exp)
-    E = _clean_energy(E)
+    E = _clean_energy(E) * oftype(E, E_SI)
+    dE *= oftype(dE, E_SI)
     scale = coefficient * dE * _weight(E, dE, ΔU) * E^(E_exp - 2)
     e_inf = max(E + ΔU, zero(E))
     sqrte = sqrt(e_inf)
@@ -70,7 +72,7 @@ function _plasma_moments(data, grid, sc_pot, magf; coefficient, E_exp, mass, cha
         @. W = _energy_weights(T(energy), T(denergy), ΔU, coefficient, E_exp)
         S = _as_array(@alloc(T, length(omega), 4))
         _den, flux, _mftens, eflux = compute_fused_moments(data, W, omega, S)
-        density = sqrt(mass / 2) * _den
+        density = T(sqrt(mass / 2)) * _den
         mftens = _symmetric(_mftens) .* T(sqrt(2 * mass))
         velocity = flux ./ density
 

@@ -34,7 +34,8 @@ Temperatures agree with PySPEDAS to `rtol = 1e-6`. Density, velocity and fluxes 
 
 ```@example moment
 ref = saved["ref"]
-@assert isapprox(moments.density, ref["density"]; rtol = 2e-3)
+density = 1e-6 .* moments.density  # m⁻³ → cm⁻³
+@assert isapprox(density, ref["density"]; rtol = 2e-3)
 @assert isapprox(moments.avgtemp, ref["avgtemp"]; rtol = 1e-6)
-(; density = moments.density[1:3], density_pyspedas = ref["density"][1:3], avgtemp_eV = moments.avgtemp[1:3])
+(; density_cm3 = density[1:3], density_pyspedas = ref["density"][1:3], avgtemp_eV = moments.avgtemp[1:3])
 ```
